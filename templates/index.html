@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+
+<head>
+    <title>Telemetry</title>
+    <link rel="stylesheet" type="text/css" href={{ url_for('static',filename='styles/index.css') }}>
+</head>
+<body>
+    <script src="http://code.jquery.com/jquery-latest.js"></script>
+    <div id="sideBar">
+        <button id="addPlus" class="add_plus" onclick="animateButton(this)">
+            <div id="plus" class="plus">
+            <span>&plus;</span>
+            </div>
+        </button><br>
+        <button id="addResizable" class="add_div add_text hide option_invalid">
+            Add Text
+        </button><br>
+        <button id="addMeter" class="add_div add_meter hide option_invalid">
+            Add Meter
+        </button>
+    </div>
+    <div id = "resizableContainer">
+        <div id = "resizable1" class="resizable">
+            <div id="data1" class="data">
+
+            </div>
+        </div>
+        <div id = "resizable2" class="resizable">
+            <div id="data2" class="data">
+            </div>
+        </div>
+        <div id = "resizable3" class="resizable meter">
+            <canvas id="meter3" style="width: 80%;top:10%;left:10%">
+            </canvas>
+        </div>
+        <div id = "resizable4" class="resizable graph">
+            <canvas id="graph4" style="width: 80%;top:10%;left:10%">
+            </canvas>
+        </div>
+        <script>
+            function sidebarWidth(){
+                var sidebar_width=$('#sideBar').width();
+                $('#resizableContainer').css('margin-left',sidebar_width+20);
+            }
+            $(window).resize(function(){
+                sidebarWidth();
+            })
+
+            var onMsg = function(e) {
+                thisNum = e.data;
+                if(thisNum === 'None'){
+                    thisNum = lastNum;
+                }
+                if(thisNum > maxNum){
+                    maxNum = parseInt(thisNum);
+                }
+                lastNum = e.data;
+                $("#data1").text(thisNum);
+                $("#data2").text(thisNum);
+            }
+
+            var setupMeters = function() {
+                scaleCanvas("meter3");
+            }
+
+            function scaleCanvas(elem){
+                var c=document.getElementById(elem);
+                scaleFactor = 5;
+                c.width = Math.ceil(c.width * scaleFactor);
+                c.height = Math.ceil(c.height * scaleFactor);
+            }
+
+            var meterUpdate = function(e) {
+                animateMeter("meter3", 150);
+            }
+
+            function animateMeter(elem, maxVal){
+                // thisNum = parseInt(thisNum);
+                var c=document.getElementById(elem);
+                scaleFactor = 5;
+                // // c.style.width = c.style.width || c.width + 'px';
+                // // c.style.height = c.style.height || c.height + 'px';
+
+                // c.width = Math.ceil(c.width * scaleFactor);
+                // c.height = Math.ceil(c.height * scaleFactor);
+                // function animate(){
+                ctx = c.getContext("2d");
+                ctx.clearRect(0, 0, c.width, c.height);
+                ctx.translate(c.width/2, c.height - 1/10*c.height);
+                
+                ctx.scale(scaleFactor, scaleFactor);
+                var piDiv = 120;
+                var numBlocks = Math.floor(parseInt(thisNum)*piDiv/maxVal);
+                for(var i = 0; i <= numBlocks; i ++){
+                    ctx.beginPath();
+                    var rad = i*Math.PI/piDiv;
+                    var cosV = Math.cos(rad);
+                    var sinV = Math.sin(rad);
+                    ctx.moveTo(-80 * cosV, -80 * sinV);
+                    // ctx.lineTo(-84 * cosV, -84 * sinV);
+                    // ctx.moveTo(-88 * cosV, -88 * sinV);
+                    // ctx.lineTo(-92 * cosV, -92 * sinV);
+                    // ctx.moveTo(-96 * cosV, -96 * sinV);
+                    ctx.lineTo(-100 * cosV, -100 * sinV);
+                    // if(i <= numBlocks){
+                        // ctx.strokeStyle="#" 
+                        //     + Math.min(200,Math.max(0,16*(i-Math.floor(piDiv/3)) - 1)).toString(16).padStart(2,"0")
+                        //     + Math.min(200,Math.max(0,16*i - 1)).toString(16).padStart(2,"0") 
+                        //     + Math.min(200,Math.max(0,16*(i-2*Math.floor(piDiv/3)) - 1)).toString(16).padStart(2,"0");
+                    // }
+                    var clr = "#";
+                    if(i < piDiv/2){
+                        clr += parseInt(255 * (i/(piDiv/2))).toString(16).padStart(2,"0");
+                        clr += parseInt(255).toString(16).padStart(2,"0");
+                        clr += parseInt(125 * (1 - i/(piDiv/2))).toString(16).padStart(2,"0");
+                    }
+                    // else if(i >= piDiv/3 && i < 2 * piDiv/3) {
+                    //     clr += parseInt(255 * (i%(piDiv/3))/(piDiv/3)).toString(16).padStart(2,"0");
+                    //     clr += parseInt(255).toString(16).padStart(2,"0");
+                    //     clr += parseInt(0).toString(16).padStart(2,"0");
+                    // }
+                    else {
+                        clr += parseInt(255).toString(16).padStart(2,"0");
+                        clr += parseInt(255  * (1 - ((i%(piDiv/2))/(piDiv/2)))).toString(16).padStart(2,"0");
+                        clr += parseInt(0).toString(16).padStart(2,"0");
+                    }
+                    ctx.strokeStyle = clr;
+                        //     + Math.min(200,Math.max(0,16*(i-Math.floor(piDiv/3)) - 1)).toString(16).padStart(2,"0")
+                        //     + Math.min(200,Math.max(0,16*i - 1)).toString(16).padStart(2,"0") 
+                        //     + Math.min(200,Math.max(0,16*(i-2*Math.floor(piDiv/3)) - 1)).toString(16).padStart(2,"0");
+
+                    // else{
+                        // ctx.strokeStyle = "white";
+                    // }
+                    // ctx.strokeStyle = "#" + Math.max(0,Math.floor(Math.pow(16,6)*i/numBlocks) - 1).toString(16).padStart(6,"0");
+                    // console.log("#" + Math.max(0,Math.floor(Math.pow(16,6)*i/numBlocks) - 1).toString(16).padStart(6,"0"));
+                    
+                    ctx.stroke();
+                }
+                ctx.beginPath();
+                // ctx.strokeStyle = maxNum/150 * Math.PI >= 0.75 * Math.PI ? "#FF9421" : "#35FFFF";
+                ctx.lineWidth = "1";
+                let radius = 110;
+                // console.log(maxNum);
+                ctx.arc(0,0, radius, Math.PI, (Math.PI +  Math.PI * maxNum/maxVal));
+                ctx.stroke();
+                ctx.resetTransform();
+                // requestAnimationFrame(animate);
+            }
+
+            if (!!window.EventSource) {
+                var lastNum;
+                var thisNum = 0;
+                var maxNum = 0;
+                var source = new EventSource('/');
+                setupMeters();
+                
+            // var ctx = c.getContext("2d");
+                // ctx.translate(c.width/2, c.height - 1/10*c.height);
+
+                source.onmessage = function(e){
+                    onMsg(e);
+                    meterUpdate(e);
+                };
+                
+            }
+    
+            var resizeArray = [1,2,3,4];
+            var newFunc = function (e) {
+                $("#resizable1").mouseover(function(){
+                    if(!inUse){
+                        $("#resizable1").dlResizeable();
+                    }
+                });
+                $("#resizable2").mouseover(function(){
+                    if(!inUse){
+                        $("#resizable2").dlResizeable();
+                    }
+                });
+                $("#resizable3").mouseover(function(){
+                    if(!inUse){
+                        $("#resizable3").dlResizeable();
+                    }
+                });
+                $("#resizable4").mouseover(function(){
+                    if(!inUse){
+                        $("#resizable4").dlResizeable();
+                    }
+                });
+            }
+    
+            var inUse = false;
+            (function ($) {
+    
+                var parentOffset,
+                    item,
+                    overRight = false,
+                    overBelow = false,
+                    overLeft = false,
+                    overAbove = false,
+                    overMiddle = false,
+                    newWidth,
+                    newHeight,
+                    beingDragged = false,
+                    draggedRight = false,
+                    draggedBelow = false,
+                    draggedLeft = false,
+                    draggedAbove = false,
+                    draggedFull = false;
+    
+                $.fn.dlResizeable = function( options ) {
+                    item = this;
+                    var initPageX = null;
+                    var initPageY = null;
+                    $(document).mousedown(function (e) {
+                        inUse = true;
+                        newWidth = parentOffset.relX - item.outerWidth();
+                        newHeight = parentOffset.relY - item.outerHeight();
+                        draggedAbove = overAbove;
+                        draggedBelow = overBelow;
+                        draggedLeft = overLeft;
+                        draggedRight = overRight;
+                        draggedFull = overMiddle;
+                        beingDragged = true;
+                        if(overRight && overBelow){
+                            item.css("cursor", "se-resize");
+                        }
+                        else if(overLeft && overBelow){
+                            item.css("cursor", "sw-resize");
+                        }
+                        else if(overRight && overAbove){
+                            item.css("cursor", "ne-resize");
+                        }
+                        else if(overLeft && overAbove){
+                            item.css("cursor", "nw-resize");
+                        }
+                        else if(overAbove || overBelow){
+                            item.css("cursor", "ns-resize");
+                        }
+                        else if(overLeft || overRight){
+                            item.css("cursor", "ew-resize");
+                        }
+                        else if(overMiddle){
+                            item.css("cursor", "move");
+                        }
+                        else{
+                            beingDragged = false;
+                        }
+                    });
+    
+                    $(document).mouseup( function (e) {
+                        inUse = false;
+                        beingDragged = false;
+                        item.css("cursor", "default");
+                        draggedAbove = false;
+                        draggedLeft = false;
+                        draggedRight = false;
+                        draggedBelow = false;
+                        draggedFull = false;
+                        initPageX = null;
+                        initPageY = null;
+                    });
+    
+                    $(document).mousemove( function (e) {
+                        parentOffset = item.offset();
+                        var relX = e.pageX - parentOffset.left;
+                        var relY = e.pageY - parentOffset.top;
+                        var widthToAdd = 0;
+                        var right = relX >= item.outerWidth() - 8 && relX <= $(item).outerWidth();
+                        var bottom = relY >= item.outerHeight() - 8 && relY <= $(item).outerHeight();
+                        var left = relX >= 0 && relX <= 8;
+                        var top = relY >= 0 && relY <= 8;
+                        var middle = relX < item.outerWidth() - 8 && relX > 8 && relY < item.outerHeight() - 8 && relY > 8;
+                        overAbove = top;
+                        overBelow = bottom;
+                        overLeft = left;
+                        overRight = right;
+                        overMiddle = middle;
+                        if(!beingDragged){
+                            if(overRight && overBelow){
+                                item.css("cursor", "se-resize");
+                            }
+                            else if(overLeft && overBelow){
+                                item.css("cursor", "sw-resize");
+                            }
+                            else if(overRight && overAbove){
+                                item.css("cursor", "ne-resize");
+                            }
+                            else if(overLeft && overAbove){
+                                item.css("cursor", "nw-resize");
+                            }
+                            else if(overAbove || overBelow){
+                                item.css("cursor", "ns-resize");
+                            }
+                            else if(overLeft || overRight){
+                                item.css("cursor", "ew-resize");
+                            }
+                            else if(overMiddle){
+                                item.css("cursor", "move");
+                            }
+                            else {
+                                item.css("cursor", "default");
+                            }
+                        }
+                        if(draggedFull){
+                            if(initPageX == null){
+                                initPageX = relX;
+                            }
+                            if(initPageY == null){
+                                initPageY = relY;
+                            }
+                            newWidth = relX;
+                            if(newWidth + item.offset().left > 0){
+                                item.offset({top:item.offset().top, left:item.offset().left + newWidth - initPageX})
+                            }
+                            newHeight = relY;
+                            if(newHeight + item.offset().top > 0){
+                                item.offset({top:item.offset().top + newHeight - initPageY, left:item.offset().left})
+                            }
+                        }
+                        else if(draggedLeft && draggedBelow){
+                            newWidth = relX;
+                            if(newWidth + item.offset().left > 0){
+                                item.offset({top:item.offset().top, left:item.offset().left + newWidth})
+                                item.width(item.width() - newWidth);
+                            }
+                            newHeight = relY - item.outerHeight();
+                            item.height(item.outerHeight() + newHeight);
+                        }
+                        else if(draggedRight && draggedBelow){
+                            newWidth = relX - item.outerWidth();
+                            item.width(item.outerWidth() + newWidth);
+                            newHeight = relY - item.outerHeight();
+                            item.height(item.outerHeight() + newHeight);
+                        }
+                        else if(draggedLeft && draggedAbove){
+                            newWidth = relX;
+                            if(newWidth + item.offset().left > 0){
+                                item.offset({top:item.offset().top, left:item.offset().left + newWidth})
+                                item.width(item.width() - newWidth);
+                            }
+                            newHeight = relY;
+                            if(newHeight + item.offset().top > 0){
+                                item.offset({top:item.offset().top + newHeight, left:item.offset().left})
+                                item.height(item.height() - newHeight);
+                            }
+                            // item.height(item.outerHeight() + newHeight);
+                        }
+                        else if(draggedRight && draggedAbove){
+                            newWidth = relX - item.outerWidth();
+                            item.width(item.outerWidth() + newWidth);
+                            newHeight = relY;
+                            if(newHeight + item.offset().top > 0){
+                                item.offset({top:item.offset().top + newHeight, left:item.offset().left})
+                                item.height(item.height() - newHeight);
+                            }
+                            // item.height(item.outerHeight() + newHeight);
+                        }
+                        else if (draggedAbove) {
+                            newHeight = relY;
+                            if(newHeight + item.offset().top > 0){
+                                item.offset({top:item.offset().top + newHeight, left:item.offset().left})
+                                item.height(item.height() - newHeight);
+                            }
+                        }
+                        else if (draggedLeft){
+                            newWidth = relX;
+                            if(newWidth + item.offset().left > 0){
+                                item.offset({top:item.offset().top, left:item.offset().left + newWidth})
+                                item.width(item.width() - newWidth);
+                            }
+                        }
+                        else if (draggedRight) {
+                            newWidth = relX - item.outerWidth();
+                            item.width(item.outerWidth() + newWidth);
+                        }
+                        else if(draggedBelow){
+                            newHeight = relY - item.outerHeight();
+                            item.height(item.outerHeight() + newHeight);
+                        }
+                    });
+    
+                    return this;
+                }
+    
+            }(jQuery));
+    
+            $(document).ready(function(e){
+                sidebarWidth();
+                newFunc(e);
+                document.getElementById("addResizable").addEventListener("click",() => {
+                    var newDivVal = Math.max(...resizeArray) + 1;
+                    resizeArray.push(newDivVal);
+    
+                    var htmlToInsert = '<div id = "resizable' 
+                        + newDivVal 
+                        + '" class="resizable"><div id="data'
+                        + newDivVal
+                        + '" class="data"></div></div>'
+    
+                    document.getElementById("resizableContainer").insertAdjacentHTML('beforeend',htmlToInsert);
+    
+                    var str = newFunc.toString().replace(/\s/g,'');
+                    var strlen = str.length;
+                    var start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    str = str + '$("#resizable' 
+                    + newDivVal 
+                    +'").mouseover(function(){if(!inUse){$("#resizable' 
+                    + newDivVal 
+                    + '").dlResizeable();}});';
+                    newFunc = new Function('e',str);
+                    newFunc(e);
+    
+                    str = onMsg.toString().replace(/\s/g,'');
+                    strlen = str.length;
+                    start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    str = str + '$("#data' 
+                    + newDivVal 
+                    +'").text(thisNum);';
+                    onMsg = new Function('e',str);
+                });
+
+                document.getElementById("addMeter").addEventListener("click",() => {
+                    var newDivVal = Math.max(...resizeArray) + 1;
+                    resizeArray.push(newDivVal);
+    
+                    var htmlToInsert = '<div id = "resizable' 
+                        + newDivVal 
+                        + '" class="resizable meter"><canvas id="meter'
+                        + newDivVal
+                        + '" style="width: 80%;top:10%;left:10%"></canvas></div>'
+    
+                    document.getElementById("resizableContainer").insertAdjacentHTML('beforeend',htmlToInsert);
+    
+                    var str = newFunc.toString().replace(/\s/g,'');
+                    var strlen = str.length;
+                    var start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    str = str + '$("#resizable' 
+                    + newDivVal 
+                    +'").mouseover(function(){if(!inUse){$("#resizable' 
+                    + newDivVal 
+                    + '").dlResizeable();}});';
+                    newFunc = new Function('e',str);
+                    newFunc(e);
+    
+                    scaleCanvas("meter" + newDivVal);
+                    
+                    str = meterUpdate.toString().replace(/\s/g,'');
+                    strlen = str.length;
+                    start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    str = str + 'animateMeter("meter' 
+                    + newDivVal 
+                    +'", 150);';
+                    meterUpdate = new Function('e',str);
+                    meterUpdate(e);
+                });
+            });        
+        </script>
+    </div>
+    
+
+    <script>
+        function animateButton(x){
+            x.classList.toggle("showing");
+            document.getElementById("plus").classList.toggle("cross");
+            var mtr = document.getElementById("addMeter");
+            var res = document.getElementById("addResizable");
+            mtr.classList.toggle("option_valid");
+            res.classList.toggle("option_valid");
+            mtr.classList.toggle("option_invalid");
+            res.classList.toggle("option_invalid");
+            if(mtr.classList.contains("hide")){
+                setTimeout(function(){mtr.classList.toggle("hide")},100);
+                setTimeout(function(){res.classList.toggle("hide")},100);
+                setTimeout(function(){mtr.classList.toggle("hover_valid")},200);
+                setTimeout(function(){res.classList.toggle("hover_valid")},200);
+            }
+            else{
+                mtr.classList.toggle("hover_valid");
+                setTimeout(function(){mtr.classList.toggle("hide")},400);
+                res.classList.toggle("hover_valid");
+                setTimeout(function(){res.classList.toggle("hide")},400);
+            }
+            // setTimeout(function(){mtr.classList.toggle("hover_valid")},200);
+        }
+    </script>
+    
+</body>
