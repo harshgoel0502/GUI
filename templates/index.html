@@ -388,6 +388,17 @@
             $(document).ready(function(e){
                 sidebarWidth();
                 newFunc(e);
+                // newarr = [...resizeArray];
+                // newarr.reverse();
+                // for(var j = 0; j < newarr.length; j ++){
+                //     var i = newarr[j];
+                //     item = $("#resizable"+(i).toString());
+                //     topVal = item.offset().top
+                //     left = item.offset().left
+                //     item.css("position","absolute");
+                //     $("#resizable"+(i).toString()).offset({top:topVal, left:left});
+                // }
+                
                 document.getElementById("addResizable").addEventListener("click",() => {
                     var newDivVal = Math.max(...resizeArray) + 1;
                     resizeArray.push(newDivVal);
@@ -458,7 +469,8 @@
                     meterUpdate = new Function('e',str);
                     meterUpdate(e);
                 });
-            });        
+            });       
+ 
         </script>
     </div>
     

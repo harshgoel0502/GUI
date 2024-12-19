@@ -3,7 +3,7 @@
     padding: 0px;
 }
 body{
-    background: rgb(10, 10, 10);
+    background: rgb(12, 12, 12);
 }
 
 .data {
@@ -28,8 +28,8 @@ body{
     padding: 10px;
 }
 .resizable {
-    position:-ms-page;
-    /* margin: 10px; */
+    position:unset;
+    margin: 5px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -42,7 +42,7 @@ body{
     /* margin: 10px; */
     height: fit-content;
     border-radius: 10px;
-    border: 2px solid rgb(20, 20, 20);
+    /* border: 1px solid rgb(20, 20, 20); */
     background-color: black;
     -webkit-touch-callout: none;
     -webkit-user-select: none;
