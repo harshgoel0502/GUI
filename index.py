@@ -26,7 +26,7 @@ def test():
                 #     time.sleep(20)
                 time.sleep(.02)
         return Response(events(), content_type='text/event-stream')
-    return render_template('index.html')
+    return render_template('test2.html')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port='8000', debug=True)

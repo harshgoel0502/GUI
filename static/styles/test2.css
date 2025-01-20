@@ -1,0 +1,141 @@
+html,
+body {
+  background-color: black;
+  width: 100vw;
+  height: 100vh;
+  margin: 0;
+  border: 0;
+  padding: 0;
+  -webkit-box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  box-sizing: border-box;
+}
+
+*,
+*::before,
+*::after {
+  -webkit-box-sizing: inherit;
+  -moz-box-sizing: inherit;
+  box-sizing: inherit;
+}
+
+#sideBar{
+  margin: 0;
+  width: max-content;
+  background-color: transparent;
+  position: fixed;
+  height: 100%;
+  padding: 10px;
+  overflow: auto;
+  z-index: 1;
+}
+
+.data {
+  text-align: center;
+  color: white;
+  white-space: pre-wrap;
+  margin: 20px;
+}
+
+.meter,.graph,.data{
+  pointer-events: none;
+}
+
+.add_plus{
+  height: 50px;
+  width: 50px;
+  /* justify-content: center;
+  vertical-align:middle; */
+  /* align-items: center; */
+  border-radius: 10px;
+  border: 2px solid rgb(20, 20, 20);
+  background-color: rgb(15, 15, 15);
+  color: white;
+  transition: transform 0.5s;
+  transition-timing-function: ease-out;
+  z-index: 1;
+  font-size: x-large;
+}
+.add_plus:hover{
+  background-color:white;
+  color: rgb(20, 20, 20);
+  cursor:pointer;
+}
+
+#app {
+  width: calc(100% - 70px);
+  height: 100%;
+  margin-left: 70px;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.resizable-x,
+.resizable-y {
+  display: flex;
+  overflow: visible;
+}
+
+.resizable-x {
+  height: 100%;
+}
+
+.resizable-y {
+  height: 100%;
+  flex-direction: column;
+}
+
+h1{
+  pointer-events: none;
+}
+
+.resizer-x,
+.resizer-y {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: black;
+  padding: 3px;
+}
+
+.resizer-x {
+  z-index: 2;
+  cursor: col-resize;
+}
+.resizer-x::before,
+.resizer-x::after {
+  content: '';
+  width: 0.5px;
+  height: 16px;
+  margin: 0px;
+  background: rgb(110, 110, 110);
+}
+
+.resizer-y {
+  z-index: 1;
+  cursor: row-resize;
+  flex-direction: column;
+}
+.resizer-y::before,
+.resizer-y::after {
+  content: "";
+  width: 16px;
+  height: 0.5px;
+  margin: 0px;
+  background: rgb(110, 110, 110);
+}
+
+.resizable {
+  display: grid;
+  align-items: center;
+  justify-items: center;
+  border-radius: 5px;
+  border: 0.1px solid rgb(31, 31, 31);
+  background-color: rgb(16, 16, 16);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}

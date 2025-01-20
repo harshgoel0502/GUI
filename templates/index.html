@@ -63,6 +63,10 @@
                 scaleCanvas("meter3");
             }
 
+            var setupGraphs = function() {
+                scaleCanvas("graph4");
+            }
+
             function scaleCanvas(elem){
                 var c=document.getElementById(elem);
                 scaleFactor = 5;
@@ -148,19 +152,119 @@
                 // requestAnimationFrame(animate);
             }
 
+            var graphUpdate = function(e, ...more) {
+                animateGraph(e, "graph4", ...more);
+            }
+
+            function animateGraph(e, elem, ...more){
+                // thisNum = parseInt(thisNum);
+
+                var tempNum = e.data;
+                var maxPoints = 500;
+                if(graphMap.length === maxPoints){
+                    graphMap.shift();
+                }
+                if(tempNum != null){
+                    graphMap.push(tempNum);
+                }
+                else{
+                    graphMap.push(0);
+                }
+                var c=document.getElementById(elem);
+                scaleFactor = 5;
+                var lineGraphs = 1 + more.length;
+                ctx = c.getContext("2d");
+                ctx.clearRect(0, 0, c.width, c.height);
+                ctx.scale(scaleFactor, scaleFactor);
+                ctx.beginPath();
+                ctx.strokeStyle = "#ffffff";
+                var scaleDenom = scaleFactor * 10
+                ctx.moveTo((0.5/scaleDenom)*c.width, (1/scaleDenom)*c.height);
+                ctx.lineTo((0.5/scaleDenom)*c.width, (9/scaleDenom)*c.height);
+                ctx.lineTo((9.5/scaleDenom)*c.width, (9/scaleDenom)*c.height);
+                ctx.stroke();
+                var tempMaxNum;
+                var colours = [];
+                for(var j = 0; j < lineGraphs; j++){
+                    if(j == 0){
+                        tempMaxNum = Math.max(...graphMap);
+                        colours.push(["rgb(127.5,0,0)","rgba(127.5,0,0,0.1)", "rgba(127.5,0,0,0.05)"]);
+                    }
+                    else{
+                        tempMaxNum = Math.max(...(more[j-1]), tempMaxNum);
+                        colours.push(["rgb(0,127.5,0)","rgba(0,127.5,0,0.1)","rgba(0,127.5,0,0.05)"]);
+                    }
+                }
+                for(var j = 0; j < lineGraphs; j++){
+                    var newMap;
+                    if(j == 0){
+                        newMap = [...graphMap];
+                    }
+                    else{
+                        newMap = [...(more[j-1])];
+                    }
+                    // // c.style.width = c.style.width || c.width + 'px';
+                    // // c.style.height = c.style.height || c.height + 'px';
+
+                    // c.width = Math.ceil(c.width * scaleFactor);
+                    // c.height = Math.ceil(c.height * scaleFactor);
+                    // function animate(){
+                    
+                    ctx.beginPath();
+                    ctx.strokeStyle = colours[j][0];
+                    ctx.lineWidth = "0.2";
+                    timeline = newMap.length;
+                    ctx.moveTo((0.5/scaleDenom)*c.width, (9/scaleDenom)*c.height);
+                    ctx.lineWidth = "1";
+                    var scaleXAxis;
+                    var scaleYAxis;
+                    for(i = 0; i < timeline; i++){
+                        tempNum = newMap[i];
+                        scaleXAxis = i/timeline;
+                        scaleYAxis;
+                        scaleYAxis = tempNum/tempMaxNum;
+                        ctx.lineTo(c.width*((0.5 + (scaleXAxis*9))/scaleDenom), c.height*((1+((1-scaleYAxis)*8))/scaleDenom));
+                    }    
+                    ctx.stroke();
+                    const grad=ctx.createLinearGradient(c.width*((0.5 + (scaleXAxis*9))/scaleDenom)
+                                                        , c.height*((1+((1-scaleYAxis)*8))/scaleDenom)
+                                                        , (9.5/scaleDenom)*c.width, (9/scaleDenom)*c.height);
+                    grad.addColorStop(0, colours[j][1]);
+                    grad.addColorStop(1, colours[j][2]); 
+                    // ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+                    ctx.fillStyle = grad;
+                    ctx.lineTo((9.5/scaleDenom)*c.width, (9/scaleDenom)*c.height);
+                    ctx.fill();
+                }
+                ctx.resetTransform();
+            }
+
             if (!!window.EventSource) {
                 var lastNum;
                 var thisNum = 0;
                 var maxNum = 0;
+                var graphMap = [];
                 var source = new EventSource('/');
                 setupMeters();
+                setupGraphs();
+                var newMap = [];
                 
             // var ctx = c.getContext("2d");
                 // ctx.translate(c.width/2, c.height - 1/10*c.height);
 
                 source.onmessage = function(e){
+                    if(newMap.length === 500){
+                        newMap.shift();
+                    }
+                    if(e.data != null){
+                        newMap.push(150 - e.data);
+                    }
+                    else{
+                        newMap.push(0);
+                    }
                     onMsg(e);
                     meterUpdate(e);
+                    graphUpdate(e, newMap);
                 };
                 
             }

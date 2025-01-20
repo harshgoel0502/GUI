@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+
+<html>
+    <head>
+        <link rel="stylesheet" href={{ url_for('static',filename='styles/test2.css') }}></style>
+    </head>
+    <body>
+        <script src="http://code.jquery.com/jquery-latest.js"></script>
+        <div id="sideBar">
+            <button id="addPlus" class="add_plus" onclick="animateButton(this)">
+                <div id="plus" class="plus">
+                <span>&plus;</span>
+                </div>
+            </button>
+        </div>
+        <div id="app">
+            <div id="block0" class="resizable-x">
+                <div id="block1" class="resizable-y" style="flex: 33.33%;position:relative;">
+                    <div id="block2" class="resizable" style="flex: 33.33%;position:relative;">
+                        <div id="data1" class="data">
+                        </div>
+                    </div>
+                    <div id="y0" class="resizer-y"></div>
+                    <div id="block3" class="resizable-y" style="flex: 66.66%;position:relative;">
+                        <div id="block4" class="resizable" style="flex: 33.33%;position:relative;">
+                            <canvas id="meter4" class="meter" style="width: 80%;">
+                            </canvas>
+                        </div>
+                        <div id="y1" class="resizer-y"></div>
+                        <div id="block5" class="resizable" style="flex: 33.33%;position:relative;">
+                            <canvas id="graph6" class="graph" style="width: 80%;">
+                            </canvas>
+                        </div>
+                    </div>
+                </div>
+                <div id="x0" class="resizer-x"></div>
+                <div id="block6" class="resizable-x" style="flex: 66.66%;position:relative;">
+                    <div id="block7" class="resizable-y" style="flex: 50%;position:relative;">
+                        <div id="block8" class="resizable" style="flex: 33.33%;position:relative;">
+                            <div id="data2" class="data">
+                            </div>
+                        </div>
+                        <div id="y2" class="resizer-y"></div>
+                        <div id="block9" class="resizable-y" style="flex: 66.66%;position:relative;">
+                            <div id="block10" class="resizable" style="flex: 33.33%;position:relative;">
+                            </div>
+                            <div id="y3" class="resizer-y"></div>
+                            <div id="block11" class="resizable" style="flex: 33.33%;position:relative;">
+                                <canvas id="graph7" class="graph" style="width: 80%;">
+                                </canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="x1" class="resizer-x"></div>
+                    <div id="block12" class="resizable-y" style="flex: 50%;">
+                        <div id="block13" class="resizable" style="flex: 33.33%;position:relative;">
+                            <div id="data3" class="data">
+                            </div>
+                        </div>
+                        <div id="y4" class="resizer-y"></div>
+                        <div id="block14" class="resizable-y" style="flex: 66.66%;position:relative;">
+                            <div id="block15" class="resizable" style="flex: 33.33%;position:relative;">
+                                <canvas id="meter5" class="meter" style="width: 80%;">
+                                </canvas>
+                            </div>
+                            <div id="y5" class="resizer-y"></div>
+                            <div id="block16" class="resizable" style="flex: 33.33%;position:relative;">
+                                <canvas id="graph8" class="graph" style="width: 80%;">
+                                </canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        
+        <script>
+            var inUse, inUseByElem = null;
+            var orientation = null;
+            var elemBeingAdded = false;
+            (function ($) {
+
+            var item,
+                originalLocation,
+                overMiddle = false,
+                beingDragged = false;
+
+            $.fn.dlResizeable = function( options ) {
+                item = this;
+                var initPageX = null;
+                var initPageY = null;
+                var pointerProperty = null;
+                $(document).mousedown(function (e) {
+                    if(overMiddle && !inUse && inUseByElem === null){
+                        document.getElementById(e.target.id).style.pointerEvents = 'none';
+                        pointerProperty = e.target.id;
+                        document.querySelectorAll(".resizable").forEach((x)=>{
+                            x.removeEventListener('mouseover',addResizable);
+                            x.addEventListener('mouseenter',checkRectanglesMove,true);
+                        });
+                        originalLocation = item.offset();
+                        document.querySelector(item.selector).style.zIndex = '200';   
+                        document.querySelector(item.selector).style.opacity = '0.7';     
+                        inUse = true;
+                        inUseByElem = this;
+                        beingDragged = overMiddle;
+                        item.css("cursor", "move");
+                    }
+                });
+
+                $(document).mouseup( function (e) {
+                    if(inUse && inUseByElem === this){
+                        if(pointerProperty!==null){
+                            document.getElementById(pointerProperty).style.pointerEvents = 'auto';
+                        }
+                        document.querySelectorAll(".resizable").forEach((x)=>{
+                            x.addEventListener('mouseover',addResizable);
+                            x.removeEventListener('mouseenter',checkRectanglesMove,true);
+                        });
+                        if(e.target.id.endsWith('canvas') && !elemBeingAdded){
+                            relocate(e.target.id,item);
+                        }
+                        else{
+                            item.offset({top:originalLocation.top,left:originalLocation.left});
+
+                        // document.querySelector(item.selector).style.position = 'relative';
+                            document.querySelector(item.selector).style.zIndex = '0';  
+                            document.querySelector(item.selector).style.opacity = '1';
+                        }       
+                        inUse = false;
+                        inUseByElem = null;
+                        beingDragged = false;
+                        item.css("cursor", "default");
+                    }
+                });
+
+                $(document).mousemove( function (e) {
+                    if(inUseByElem === this || inUseByElem === null){
+                        var parentOffset = item.offset();
+                        if(parentOffset === undefined){
+                            var relX = e.pageX;
+                            var relY = e.pageY;
+                        }
+                        else{
+                            var relX = e.pageX - parentOffset.left;
+                            var relY = e.pageY - parentOffset.top;
+                        }
+                        var middle = relX < item.outerWidth() - 20 && relX > 20 && relY < item.outerHeight() - 20 && relY > 20;
+                        overMiddle = middle;
+                        if(!beingDragged){
+                            if(overMiddle){
+                                item.css("cursor", "move");
+                            }
+                            else {
+                                item.css("cursor", "default");
+                            }
+                        }
+                        if(beingDragged){
+                            if(initPageX == null){
+                                initPageX = relX;
+                            }
+                            if(initPageY == null){
+                                initPageY = relY;
+                            }
+                            newWidth = relX;
+                            if(newWidth + item.offset().left > 0){
+                                item.offset({top:item.offset().top, left:item.offset().left + newWidth - initPageX})
+                            }
+                            newHeight = relY;
+                            if(newHeight + item.offset().top > 0){
+                                item.offset({top:item.offset().top + newHeight - initPageY, left:item.offset().left})
+                            }
+                        }
+                    }
+                });
+
+                return this;
+            }
+
+            }(jQuery));
+
+
+
+
+
+            window.onload = (function () {
+                "use strict";
+                resizer();
+                var reload = false;
+                window.addEventListener("resize",resizer);
+                document.querySelectorAll(".resizable").forEach((x)=>{
+                    x.addEventListener('mouseover',addResizable);
+                });
+            })();
+
+            function addResizable(e){
+                elem = "#" + e.target.id;
+                if(elem !== "#"){
+                    $(elem).dlResizeable();
+                }
+            }
+
+            function animateButton(elem){
+                elemBeingAdded = true;
+                document.querySelectorAll(".resizable").forEach((x)=>{
+                    var repl = x.cloneNode(true);
+                    repl.addEventListener('mouseover', checkRectangles);
+                    x.replaceWith(repl);
+                })
+                // document.querySelectorAll(".resizable").forEach((x)=>{
+                // })
+            }
+
+            function checkRectanglesMove(e){
+                document.querySelectorAll(".resizable").forEach((x)=>{
+                    if(!(e.target.id).includes(x.getAttribute('id')) && document.getElementById(x.getAttribute('id') + 'canvas') != null){
+                        document.getElementById(x.getAttribute('id') + 'canvas').remove();
+                    }
+                });
+                var elem = e.target.id; 
+                elem = "#" + elem;
+                if(elem !== "#"){
+                    var cvs = document.createElement('canvas');
+                    cvs.setAttribute("id", e.target.id+'canvas');
+                    cvs.style.position = 'absolute';
+                    var topOffset, leftOffset;
+                    if($(elem).offset() === undefined){
+                        topOffset = 0;
+                        leftOffset = 0;
+                    }
+                    else{
+                        topOffset = $(elem).offset().top;
+                        leftOffset = $(elem).offset().left;
+                    }
+                    cvs.style.top = topOffset.toString() + 'px';
+                    cvs.style.left = leftOffset.toString() + 'px';
+                    cvs.style.width = $(elem).outerWidth().toString() + 'px';
+                    cvs.style.height = $(elem).outerHeight().toString() + 'px';
+                    cvs.style.border = '1px solid rgb(0, 91, 105)';
+                    cvs.style.borderRadius = '5px';
+                    cvs.style.zIndex=1000;
+                    if($(elem).outerWidth() > $(elem).outerHeight()){                    
+                        cvs.style.width = ($(elem).outerWidth()/2).toString() + 'px';
+                        if((e.pageX - leftOffset) < ($(elem).width() / 2)) {
+                            cvs.style.left = leftOffset.toString() + 'px';
+                            orientation = 'left';
+                        }  
+                        else{
+                            cvs.style.left = (leftOffset + $(elem).outerWidth()/2).toString() + 'px';
+                            orientation = 'right';
+                        }                  
+                    }
+                    else{
+                        cvs.style.height = ($(elem).outerHeight()/2).toString() + 'px';
+                        if((e.pageY - topOffset) < ($(elem).height() / 2)) {
+                            // document.querySelector(elem).style.alignContent = 'flex-start';
+                            cvs.style.top = topOffset.toString() + 'px';
+                            orientation = 'top';
+
+                        }  
+                        else{
+                            cvs.style.top = (topOffset + $(elem).height()/2).toString() + 'px';
+                            orientation = 'bottom';
+                        }
+                    }
+                    document.querySelector('body').appendChild(cvs);
+                    cvs.addEventListener('mouseout',()=>{
+                        cvs.remove();
+                        document.querySelector(elem).removeEventListener('mouseover',doThis);
+                    });
+                }
+            }
+
+            
+            var blocks = 16;
+            var xResizers = 2;
+            var yResizers = 6;
+
+            function checkRectangles(e){
+                document.querySelectorAll(".resizable").forEach((x)=>{
+                    if(!(e.target.id).includes(x.getAttribute('id')) && document.getElementById(x.getAttribute('id') + 'canvas') != null){
+                        document.getElementById(x.getAttribute('id') + 'canvas').remove();
+                    }
+                });
+                var elem = e.target.id; 
+                elem = "#" + elem;
+                var cvs = document.createElement('canvas');
+                cvs.setAttribute("id", e.target.id+'canvas');
+                cvs.style.position = 'absolute';
+                var topOffset, leftOffset;
+                if($(elem).offset() === undefined){
+                    topOffset = 0;
+                    leftOffset = 0;
+                }
+                else{
+                    topOffset = $(elem).offset().top;
+                    leftOffset = $(elem).offset().left;
+                }
+                cvs.style.top = topOffset.toString() + 'px';
+                cvs.style.left = leftOffset.toString() + 'px';
+                cvs.style.width = $(elem).outerWidth().toString() + 'px';
+                cvs.style.height = $(elem).outerHeight().toString() + 'px';
+                cvs.style.border = '1px solid rgb(0, 91, 105)';
+                cvs.style.borderRadius = '5px';
+                cvs.style.zIndex=1000;
+                if($(elem).outerWidth() > $(elem).outerHeight()){                    
+                    cvs.style.width = ($(elem).outerWidth()/2).toString() + 'px';
+                    if((e.pageX - leftOffset) < ($(elem).width() / 2)) {
+                        cvs.style.left = leftOffset.toString() + 'px';
+                        orientation = 'left';
+                    }  
+                    else{
+                        cvs.style.left = (leftOffset + $(elem).outerWidth()/2).toString() + 'px';
+                        orientation = 'right';
+                    }                  
+                }
+                else{
+                    cvs.style.height = ($(elem).outerHeight()/2).toString() + 'px';
+                    if((e.pageY - topOffset) < ($(elem).height() / 2)) {
+                        // document.querySelector(elem).style.alignContent = 'flex-start';
+                        cvs.style.top = topOffset.toString() + 'px';
+                        orientation = 'top';
+
+                    }  
+                    else{
+                        cvs.style.top = (topOffset + $(elem).height()/2).toString() + 'px';
+                        orientation = 'bottom';
+                    }
+                }
+                document.querySelector('body').appendChild(cvs);
+                var check = true;
+                cvs.addEventListener('click',()=>{
+                    document.querySelector('body').removeChild(cvs);
+                    document.querySelector(elem).addEventListener('mouseover',doThis);
+                    // check = false;
+                });
+                if(check){
+                    cvs.addEventListener('mouseout',()=>{
+                        cvs.remove();
+                        document.querySelector(elem).removeEventListener('mouseover',doThis);
+                    });
+                }
+            }
+
+            function resizableX(resizableName) {
+                const resizer = document.querySelector(resizableName);
+                resizer.addEventListener("mousedown", onmousedown);
+                resizer.addEventListener("touchstart", ontouchstart);
+
+                // for mobile
+                function ontouchstart(e) {
+                e.preventDefault();
+                resizer.addEventListener("touchmove", ontouchmove);
+                resizer.addEventListener("touchend", ontouchend);
+                }
+                function ontouchmove(e) {
+                e.preventDefault();
+                const clientX = e.touches[0].clientX;
+                const deltaX = clientX - (resizer._clientX || clientX);
+                resizer._clientX = clientX;
+                const l = resizer.previousElementSibling;
+                const r = resizer.nextElementSibling;
+                // LEFT
+                if (deltaX < 0) {
+                    const w = Math.round(parseInt(getComputedStyle(l).width) + deltaX);
+                    l.style.flex = `0 ${w < 10 ? 0 : w}px`;
+                    r.style.flex = "1 0";
+                }
+                // RIGHT
+                if (deltaX > 0) {
+                    const w = Math.round(parseInt(getComputedStyle(r).width) - deltaX);
+                    r.style.flex = `0 ${w < 10 ? 0 : w}px`;
+                    l.style.flex = "1 0";
+                }
+                }
+                function ontouchend(e) {
+                e.preventDefault();
+                resizer.removeEventListener("touchmove", ontouchmove);
+                resizer.removeEventListener("touchend", ontouchend);
+                delete e._clientX;
+                }
+
+                // for desktop
+                function onmousedown(e) {
+                e.preventDefault();
+                document.addEventListener("mousemove", onmousemove);
+                document.addEventListener("mouseup", onmouseup);
+                }
+                function onmousemove(e) {
+                e.preventDefault();
+                const clientX = e.clientX;
+                const deltaX = clientX - (resizer._clientX || clientX);
+                resizer._clientX = clientX;
+                const l = resizer.previousElementSibling;
+                const r = resizer.nextElementSibling;
+                // LEFT
+                if (deltaX < 0) {
+                    const w = Math.round(parseInt(getComputedStyle(l).width) + deltaX);
+                    l.style.flex = `0 ${w < 10 ? 0 : w}px`;
+                    r.style.flex = "1 0";
+                }
+                // RIGHT
+                if (deltaX > 0) {
+                    const w = Math.round(parseInt(getComputedStyle(r).width) - deltaX);
+                    r.style.flex = `0 ${w < 10 ? 0 : w}px`;
+                    l.style.flex = "1 0";
+                }
+                }
+                function onmouseup(e) {
+                e.preventDefault();
+                document.removeEventListener("mousemove", onmousemove);
+                document.removeEventListener("mouseup", onmouseup);
+                delete e._clientX;
+                }
+            }
+
+            // vertical direction
+            function resizableY(resizableName) {
+                const resizer = document.querySelector(resizableName);
+                resizer.addEventListener("mousedown", onmousedown);
+                resizer.addEventListener("touchstart", ontouchstart);
+
+                // for mobile
+                function ontouchstart(e) {
+                e.preventDefault();
+                resizer.addEventListener("touchmove", ontouchmove);
+                resizer.addEventListener("touchend", ontouchend);
+                }
+                function ontouchmove(e) {
+                e.preventDefault();
+                const clientY = e.touches[0].clientY;
+                const deltaY = clientY - (resizer._clientY || clientY);
+                resizer._clientY = clientY;
+                const t = resizer.previousElementSibling;
+                const b = resizer.nextElementSibling;
+                // UP
+                if (deltaY < 0) {
+                    const h = Math.round(parseInt(getComputedStyle(t).height) + deltaY);
+                    t.style.flex = `0 ${h < 10 ? 0 : h}px`;
+                    b.style.flex = "1 0";
+                }
+                // DOWN
+                if (deltaY > 0) {
+                    const h = Math.round(parseInt(getComputedStyle(b).height) - deltaY);
+                    b.style.flex = `0 ${h < 10 ? 0 : h}px`;
+                    t.style.flex = "1 0";
+                }
+                }
+                function ontouchend(e) {
+                e.preventDefault();
+                resizer.removeEventListener("touchmove", ontouchmove);
+                resizer.removeEventListener("touchend", ontouchend);
+                delete e._clientY;
+                }
+
+                // for desktop
+                function onmousedown(e) {
+                e.preventDefault();
+                document.addEventListener("mousemove", onmousemove);
+                document.addEventListener("mouseup", onmouseup);
+                }
+                function onmousemove(e) {
+                e.preventDefault();
+                const clientY = e.clientY;
+                const deltaY = clientY - (resizer._clientY || clientY);
+                resizer._clientY = clientY;
+                const t = resizer.previousElementSibling;
+                const b = resizer.nextElementSibling;
+                // UP
+                if (deltaY < 0) {
+                    const h = Math.round(parseInt(getComputedStyle(t).height) + deltaY);
+                    t.style.flex = `0 ${h < 10 ? 0 : h}px`;
+                    b.style.flex = "1 0";
+                }
+                // DOWN
+                if (deltaY > 0) {
+                    const h = Math.round(parseInt(getComputedStyle(b).height) - deltaY);
+                    b.style.flex = `0 ${h < 10 ? 0 : h}px`;
+                    t.style.flex = "1 0";
+                }
+                }
+                function onmouseup(e) {
+                e.preventDefault();
+                document.removeEventListener("mousemove", onmousemove);
+                document.removeEventListener("mouseup", onmouseup);
+                delete e._clientY;
+                }
+            }
+
+            function resizer(){
+                resizableX("#x0");
+                resizableX("#x1");
+                resizableY("#y0");
+                resizableY("#y1");
+                resizableY("#y2");
+                resizableY("#y3");
+                resizableY("#y4");
+                resizableY("#y5");
+            }
+
+            // function previewRectangle(elem){
+            //     var cvs = document.createElement('canvas');
+            //     if($(elem).outerWidth > $(elem).outerHeight){
+                    
+            //     }
+            //     document.querySelector(elem).appendChild()
+            // }
+            
+            function doThis(e){
+                var elem = e.target.id; 
+                elem = "#" + elem;
+                if(document.getElementById(e.target.id + 'canvas') != null){
+                    document.getElementById(e.target.id + 'canvas').remove();
+                }
+                var stored = document.querySelector(elem).innerHTML;
+                document.querySelector(elem).innerHTML = '';
+                // elem = elem.substring(0, elem.length-6);
+                $(elem).removeClass("resizable");
+                var newDiv1 = document.createElement('div');
+                var newDiv2 = document.createElement('div');
+                newDiv1.style.position = 'relative';
+                newDiv2.style.position = 'relative';
+                newDiv1.setAttribute("id","block" + (++blocks));
+                newDiv2.setAttribute("id","block" + (++blocks));
+                newDiv1.setAttribute("class","resizable");
+                newDiv2.setAttribute("class","resizable");
+                newDiv1.style.flex = "50%";
+                newDiv2.style.flex = "50%";
+                if($(elem).outerWidth() > $(elem).outerHeight()){
+                    if(orientation === 'left'){
+                        newDiv2.innerHTML = stored;
+                    }
+                    else{
+                        newDiv1.innerHTML = stored;
+                    }
+                    var id = "x" + xResizers++;
+                    $(elem).addClass("resizable-x")
+                    var resizerDiv = document.createElement('div');
+                    resizerDiv.setAttribute("id",id);
+                    resizerDiv.setAttribute("class","resizer-x");
+                    document.querySelector(elem).appendChild(newDiv1);
+                    document.querySelector(elem).appendChild(resizerDiv);
+                    document.querySelector(elem).appendChild(newDiv2);
+
+                    var str = resizer.toString().replace(/\s/g,'');
+                    var strlen = str.length;
+                    var start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    str = str + "resizableX(\"#"+id+"\");";
+                    resizer = new Function(str); 
+                    // resizer();  
+                    // reload = true;                         
+                }
+                else{
+                    if(orientation === 'top'){
+                        newDiv2.innerHTML = stored;
+                    }
+                    else{
+                        newDiv1.innerHTML = stored;
+                    }
+                    var id = "y" + yResizers++;
+                    $(elem).addClass("resizable-y")
+                    var resizerDiv = document.createElement('div');
+                    resizerDiv.setAttribute("id",id);
+                    resizerDiv.setAttribute("class","resizer-y");
+                    document.querySelector(elem).appendChild(newDiv1);
+                    document.querySelector(elem).appendChild(resizerDiv);
+                    document.querySelector(elem).appendChild(newDiv2);       
+                    
+                    var str = resizer.toString().replace(/\s/g,'');
+                    var strlen = str.length;
+                    var start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    // console.log(str);
+                    str = str + "resizableY(\"#"+id+"\");";
+                    resizer = new Function(str);   
+
+                    // reload = true; 
+                }
+                document.querySelector(elem).replaceWith(document.querySelector(elem).cloneNode(true));
+                document.querySelectorAll(".resizable").forEach((x)=>{
+                    var repl = x.cloneNode(true);
+                    repl.addEventListener('mouseover', addResizable);
+                    x.replaceWith(repl);
+                });
+                elemBeingAdded = false;
+                resizer();
+            }
+
+            function relocate(elemToMoveTo, itemBeingMoved){
+                if(elemToMoveTo.endsWith('canvas')){
+                    elemToMoveTo = elemToMoveTo.substring(0,elemToMoveTo.length-6);
+                }
+                elem = '#' + elemToMoveTo;
+                var itemID = itemBeingMoved.selector;
+                var itemNode = document.querySelector(itemID);
+                var itemInnerHTML = itemNode.innerHTML;
+                var parentNode = itemNode.parentNode;
+                var resizerToRemove = parentNode.children[1].id;
+                if(parentNode.children[0] === itemNode){
+                    // if(parentNode.children[2].id === elemToMoveTo){
+                        parentNode.id = parentNode.children[2].id;
+                    // }
+                    parentNode.classList = parentNode.children[2].classList;
+                    parentNode.innerHTML = parentNode.children[2].innerHTML;   
+                }
+                else{
+                    // if(parentNode.children[0].id === elemToMoveTo){
+                        parentNode.id = parentNode.children[0].id;
+                    // }
+                    parentNode.classList = parentNode.children[0].classList;
+                    parentNode.innerHTML = parentNode.children[0].innerHTML;
+                }
+
+                var newDiv1 = document.createElement('div');
+                var newDiv2 = document.createElement('div');
+                newDiv1.style.position = 'relative';
+                newDiv2.style.position = 'relative';
+                newDiv1.setAttribute("id","block" + (++blocks));
+                newDiv2.setAttribute("id", itemNode.id);
+                newDiv1.setAttribute("class","resizable");
+                newDiv2.setAttribute("class","resizable");
+                newDiv1.style.flex = "50%";
+                newDiv2.style.flex = "50%";
+                newDiv2.innerHTML = itemNode.innerHTML;
+                newDiv1.innerHTML = document.getElementById(elemToMoveTo).innerHTML;
+                document.getElementById(elemToMoveTo).innerHTML = '';
+                $(elem).removeClass("resizable");
+                // newDiv2.style.flex = "50%";
+                if($(elem).outerWidth() > $(elem).outerHeight()){
+                    $(elem).addClass("resizable-x")
+                    var resizerDiv = document.createElement('div');
+                    resizerDiv.setAttribute("id",resizerToRemove);
+                    resizerDiv.setAttribute("class","resizer-x");
+                    if(orientation === 'left'){
+                        document.querySelector(elem).appendChild(newDiv2);
+                        document.querySelector(elem).appendChild(resizerDiv);
+                        document.querySelector(elem).appendChild(newDiv1);
+                    }
+                    else{
+                        document.querySelector(elem).appendChild(newDiv1);
+                        document.querySelector(elem).appendChild(resizerDiv);
+                        document.querySelector(elem).appendChild(newDiv2);
+                    }
+                    var str = resizer.toString().replace(/\s/g,'');
+                    if(resizerToRemove.includes('y')){
+                        str = str.replace("resizableY(\"#"+resizerToRemove+"\");","resizableX(\"#"+resizerToRemove+"\");");  
+                    }
+                    var strlen = str.length;
+                    var start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    // else{
+                    //     str = str.replace()
+                    // }
+                    // str = str.replace("")"resizableY(\"#"+resizerToRemove+"\");";
+                    resizer = new Function(str);                       
+                }
+                else{
+                    $(elem).addClass("resizable-y")
+                    var resizerDiv = document.createElement('div');
+                    resizerDiv.setAttribute("id",resizerToRemove);
+                    resizerDiv.setAttribute("class","resizer-y");
+                    if(orientation === 'top'){
+                        document.querySelector(elem).appendChild(newDiv2);
+                        document.querySelector(elem).appendChild(resizerDiv);
+                        document.querySelector(elem).appendChild(newDiv1);
+                    }
+                    else{
+                        document.querySelector(elem).appendChild(newDiv1);
+                        document.querySelector(elem).appendChild(resizerDiv);
+                        document.querySelector(elem).appendChild(newDiv2);
+                    }
+                    var str = resizer.toString().replace(/\s/g,'');
+                    if(resizerToRemove.includes('x')){
+                        str = str.replace("resizableX(\"#"+resizerToRemove+"\");","resizableY(\"#"+resizerToRemove+"\");");  
+                    }
+                    var strlen = str.length;
+                    var start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    // else{
+                    //     str = str.replace()
+                    // }
+                    // str = str.replace("")"resizableY(\"#"+resizerToRemove+"\");";
+                    resizer = new Function(str); 
+                    // reload = true; 
+                }
+                document.querySelector(elem).replaceWith(document.querySelector(elem).cloneNode(true));
+                document.querySelectorAll(".resizable").forEach((x)=>{
+                    var repl = x.cloneNode(true);
+                    repl.addEventListener('mouseover', addResizable);
+                    x.replaceWith(repl);
+                });
+                resizer();
+            }
+
+        </script>
+        <script>
+            var onMsg = function(e) {
+                thisNum = e.data;
+                if(thisNum === 'None'){
+                    thisNum = lastNum;
+                }
+                if(thisNum > maxNum){
+                    maxNum = parseInt(thisNum);
+                }
+                lastNum = e.data;
+                $("#data1").text(thisNum);
+                $("#data2").text(thisNum);
+                $("#data3").text(thisNum);
+            }
+
+            var setupMeters = function() {
+                scaleCanvas("meter4");
+                scaleCanvas("meter5");
+            }
+
+            var setupGraphs = function() {
+                scaleCanvas("graph6");
+                scaleCanvas("graph7");
+                scaleCanvas("graph8");
+            }
+
+            function scaleCanvas(elem){
+                var c=document.getElementById(elem);
+                scaleFactor = 2;
+                c.width = Math.ceil(c.width * scaleFactor);
+                c.height = Math.ceil(c.height * scaleFactor);
+            }
+
+            var meterUpdate = function(e) {
+                animateMeter("meter4", 150);
+                animateMeter("meter5", 150);
+            }
+
+            function animateMeter(elem, maxVal){
+                // thisNum = parseInt(thisNum);
+                var c=document.getElementById(elem);
+                scaleFactor = 2;
+                // // c.style.width = c.style.width || c.width + 'px';
+                // // c.style.height = c.style.height || c.height + 'px';
+
+                // c.width = Math.ceil(c.width * scaleFactor);
+                // c.height = Math.ceil(c.height * scaleFactor);
+                // function animate(){
+                ctx = c.getContext("2d");
+                ctx.clearRect(0, 0, c.width, c.height);
+                ctx.translate(c.width/2, c.height - 1/10*c.height);
+                
+                ctx.scale(scaleFactor, scaleFactor);
+                var piDiv = 120;
+                var numBlocks = Math.floor(parseInt(thisNum)*piDiv/maxVal);
+                for(var i = 0; i <= numBlocks; i ++){
+                    ctx.beginPath();
+                    var rad = i*Math.PI/piDiv;
+                    var cosV = Math.cos(rad);
+                    var sinV = Math.sin(rad);
+                    ctx.moveTo(-80 * cosV, -80 * sinV);
+                    // ctx.lineTo(-84 * cosV, -84 * sinV);
+                    // ctx.moveTo(-88 * cosV, -88 * sinV);
+                    // ctx.lineTo(-92 * cosV, -92 * sinV);
+                    // ctx.moveTo(-96 * cosV, -96 * sinV);
+                    ctx.lineTo(-100 * cosV, -100 * sinV);
+                    // if(i <= numBlocks){
+                        // ctx.strokeStyle="#" 
+                        //     + Math.min(200,Math.max(0,16*(i-Math.floor(piDiv/3)) - 1)).toString(16).padStart(2,"0")
+                        //     + Math.min(200,Math.max(0,16*i - 1)).toString(16).padStart(2,"0") 
+                        //     + Math.min(200,Math.max(0,16*(i-2*Math.floor(piDiv/3)) - 1)).toString(16).padStart(2,"0");
+                    // }
+                    var clr = "#";
+                    if(i < piDiv/2){
+                        clr += parseInt(255 * (i/(piDiv/2))).toString(16).padStart(2,"0");
+                        clr += parseInt(255).toString(16).padStart(2,"0");
+                        clr += parseInt(125 * (1 - i/(piDiv/2))).toString(16).padStart(2,"0");
+                    }
+                    // else if(i >= piDiv/3 && i < 2 * piDiv/3) {
+                    //     clr += parseInt(255 * (i%(piDiv/3))/(piDiv/3)).toString(16).padStart(2,"0");
+                    //     clr += parseInt(255).toString(16).padStart(2,"0");
+                    //     clr += parseInt(0).toString(16).padStart(2,"0");
+                    // }
+                    else {
+                        clr += parseInt(255).toString(16).padStart(2,"0");
+                        clr += parseInt(255  * (1 - ((i%(piDiv/2))/(piDiv/2)))).toString(16).padStart(2,"0");
+                        clr += parseInt(0).toString(16).padStart(2,"0");
+                    }
+                    ctx.strokeStyle = clr;
+                        //     + Math.min(200,Math.max(0,16*(i-Math.floor(piDiv/3)) - 1)).toString(16).padStart(2,"0")
+                        //     + Math.min(200,Math.max(0,16*i - 1)).toString(16).padStart(2,"0") 
+                        //     + Math.min(200,Math.max(0,16*(i-2*Math.floor(piDiv/3)) - 1)).toString(16).padStart(2,"0");
+
+                    // else{
+                        // ctx.strokeStyle = "white";
+                    // }
+                    // ctx.strokeStyle = "#" + Math.max(0,Math.floor(Math.pow(16,6)*i/numBlocks) - 1).toString(16).padStart(6,"0");
+                    // console.log("#" + Math.max(0,Math.floor(Math.pow(16,6)*i/numBlocks) - 1).toString(16).padStart(6,"0"));
+                    
+                    ctx.stroke();
+                }
+                ctx.beginPath();
+                // ctx.strokeStyle = maxNum/150 * Math.PI >= 0.75 * Math.PI ? "#FF9421" : "#35FFFF";
+                ctx.lineWidth = "1";
+                let radius = 110;
+                // console.log(maxNum);
+                ctx.arc(0,0, radius, Math.PI, (Math.PI +  Math.PI * maxNum/maxVal));
+                ctx.stroke();
+                ctx.resetTransform();
+                // requestAnimationFrame(animate);
+            }
+
+            var graphUpdate = function(e, ...more) {
+                animateGraph(e, "graph6");
+                animateGraph(e, "graph7");
+                animateGraph(e, "graph8");
+            }
+
+            function animateGraph(e, elem, ...more){
+                // thisNum = parseInt(thisNum);
+
+                var tempNum = e.data;
+                var maxPoints = 500;
+                if(graphMap.length === maxPoints){
+                    graphMap.shift();
+                }
+                if(tempNum != null){
+                    graphMap.push(tempNum);
+                }
+                else{
+                    graphMap.push(0);
+                }
+                var c=document.getElementById(elem);
+                scaleFactor = 2;
+                var lineGraphs = 1 + more.length;
+                ctx = c.getContext("2d");
+                ctx.clearRect(0, 0, c.width, c.height);
+                ctx.scale(scaleFactor, scaleFactor);
+                ctx.beginPath();
+                ctx.strokeStyle = "#ffffff";
+                var scaleDenom = scaleFactor * 10
+                ctx.moveTo((0.5/scaleDenom)*c.width, (1/scaleDenom)*c.height);
+                ctx.lineTo((0.5/scaleDenom)*c.width, (9/scaleDenom)*c.height);
+                ctx.lineTo((9.5/scaleDenom)*c.width, (9/scaleDenom)*c.height);
+                ctx.stroke();
+                var tempMaxNum;
+                var colours = [];
+                for(var j = 0; j < lineGraphs; j++){
+                    if(j == 0){
+                        tempMaxNum = Math.max(...graphMap);
+                        colours.push(["rgb(127.5,0,0)","rgba(127.5,0,0,0.1)", "rgba(127.5,0,0,0.05)"]);
+                    }
+                    else{
+                        tempMaxNum = Math.max(...(more[j-1]), tempMaxNum);
+                        colours.push(["rgb(0,127.5,0)","rgba(0,127.5,0,0.1)","rgba(0,127.5,0,0.05)"]);
+                    }
+                }
+                for(var j = 0; j < lineGraphs; j++){
+                    var newMap;
+                    if(j == 0){
+                        newMap = [...graphMap];
+                    }
+                    else{
+                        newMap = [...(more[j-1])];
+                    }
+                    // // c.style.width = c.style.width || c.width + 'px';
+                    // // c.style.height = c.style.height || c.height + 'px';
+
+                    // c.width = Math.ceil(c.width * scaleFactor);
+                    // c.height = Math.ceil(c.height * scaleFactor);
+                    // function animate(){
+                    
+                    ctx.beginPath();
+                    ctx.strokeStyle = colours[j][0];
+                    ctx.lineWidth = "0.2";
+                    timeline = newMap.length;
+                    ctx.moveTo((0.5/scaleDenom)*c.width, (9/scaleDenom)*c.height);
+                    ctx.lineWidth = "1";
+                    var scaleXAxis;
+                    var scaleYAxis;
+                    for(i = 0; i < timeline; i++){
+                        tempNum = newMap[i];
+                        scaleXAxis = i/timeline;
+                        scaleYAxis;
+                        scaleYAxis = tempNum/tempMaxNum;
+                        ctx.lineTo(c.width*((0.5 + (scaleXAxis*9))/scaleDenom), c.height*((1+((1-scaleYAxis)*8))/scaleDenom));
+                    }    
+                    ctx.stroke();
+                    const grad=ctx.createLinearGradient(c.width*((0.5 + (scaleXAxis*9))/scaleDenom)
+                                                        , c.height*((1+((1-scaleYAxis)*8))/scaleDenom)
+                                                        , (9.5/scaleDenom)*c.width, (9/scaleDenom)*c.height);
+                    grad.addColorStop(0, colours[j][1]);
+                    grad.addColorStop(1, colours[j][2]); 
+                    // ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+                    ctx.fillStyle = grad;
+                    ctx.lineTo((9.5/scaleDenom)*c.width, (9/scaleDenom)*c.height);
+                    ctx.fill();
+                }
+                ctx.resetTransform();
+            }
+
+            if (!!window.EventSource) {
+                var lastNum;
+                var thisNum = 0;
+                var maxNum = 0;
+                var graphMap = [];
+                var source = new EventSource('/');
+                setupMeters();
+                setupGraphs();
+                var newMap = [];
+                
+            // var ctx = c.getContext("2d");
+                // ctx.translate(c.width/2, c.height - 1/10*c.height);
+
+                source.onmessage = function(e){
+                    if(newMap.length === 500){
+                        newMap.shift();
+                    }
+                    if(e.data != null){
+                        newMap.push(150 - e.data);
+                    }
+                    else{
+                        newMap.push(0);
+                    }
+                    onMsg(e);
+                    meterUpdate(e);
+                    graphUpdate(e);
+                };
+                
+            }
+        </script>
+        </div>
+    </body>
+</html>
