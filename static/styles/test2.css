@@ -1,3 +1,31 @@
+@font-face {
+  font-family: "SpaceMono";
+  src: url("../fonts/SpaceMono-Regular.ttf") format("truetype");
+  font-weight: normal;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "SpaceMono";
+  src: url("../fonts/SpaceMono-Italic.ttf") format("truetype");
+  font-weight: normal;
+  font-style: italic;
+}
+
+@font-face {
+  font-family: "SpaceMono";
+  src: url("../fonts/SpaceMono-Bold.ttf") format("truetype");
+  font-weight: bold;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "SpaceMono";
+  src: url("../fonts/SpaceMono-BoldItalic.ttf") format("truetype");
+  font-weight: bold;
+  font-style: italic;
+}
+
 html,
 body {
   background-color: black;
@@ -35,18 +63,120 @@ body {
   color: white;
   white-space: pre-wrap;
   margin: 20px;
+  font-family: SpaceMono;
+  font-size: 20px;
 }
 
 .meter,.graph,.data{
   pointer-events: none;
 }
 
+.menu{
+  position: absolute;
+  top: 0;
+  right: 0;
+}
+
+.menuButton{
+  padding: min(10px, 1vw);
+  color: rgb(189, 189, 189);
+  background-color: transparent;
+  border: none;
+  font-size: 5px;
+}
+
+.menuButton:hover{
+  cursor: pointer;
+}
+
+a{
+  text-decoration: none;
+  color: white;
+}
+
+.menu-dropdown{
+  position: absolute;
+  width: max-content;
+  height: auto;
+  border-width: 0px;
+  font-size: 0px;
+  opacity: 0;
+  z-index: 0;
+  background-color: rgb(20, 20, 20);
+  /* padding: 20px; */
+  padding-left: 40px;
+  padding-right: 40px;
+  border-radius: 5px;
+  /* border: 1px solid rgb(40, 40, 40); */
+  color: white;
+  font-family: SpaceMono;
+  overflow: hidden;
+  transform: scale(0);
+  /* transition: all 0.5s; */
+}
+
+.hide{
+  animation: hide 0.2s forwards;
+}
+
+.show{
+  animation: show 0.2s forwards;
+}
+
+@keyframes show {
+  0%{
+    transform: scale(0);
+    border-width: 0px;
+    font-size: 0px;
+    opacity: 0;
+    z-index: 0;
+  }
+  100%{
+    transform: scale(1);
+    border-width: 1px;
+    font-size: medium;
+    opacity: 1;
+    z-index: 1000;
+  }
+}
+
+@keyframes hide {
+  100%{
+    transform: scale(0);
+    border-width: 0px;
+    font-size: 0px;
+    opacity: 0;
+    z-index: 0;
+  }
+  0%{
+    transform: scale(1);
+    border-width: 1px;
+    font-size: medium;
+    opacity: 1;
+    z-index: 1000;
+  }
+}
+/* .hide{
+  width: 0;
+  height: 0;
+  border-width: 0px;
+  font-size: 0px;
+  opacity: 0;
+  z-index: 0;
+}
+
+.show{
+  width: 200px;
+  height: auto;
+  
+} */
+
 .add_plus{
   height: 50px;
   width: 50px;
-  /* justify-content: center;
-  vertical-align:middle; */
-  /* align-items: center; */
+  justify-content: center;
+  vertical-align:middle;
+  align-items: center;
   border-radius: 10px;
   border: 2px solid rgb(20, 20, 20);
   background-color: rgb(15, 15, 15);

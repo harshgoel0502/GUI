@@ -24,7 +24,7 @@ def test():
                 yield "data: %s\n\n" % temp
                 # if temp == None:
                 #     time.sleep(20)
-                time.sleep(.02)
+                time.sleep(.04)
         return Response(events(), content_type='text/event-stream')
     return render_template('test2.html')
 

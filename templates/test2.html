@@ -77,6 +77,21 @@
             var inUse, inUseByElem = null;
             var orientation = null;
             var elemBeingAdded = false;
+            var overlayActive = false;
+            var menuHeight = null;
+            var menuWidth = null;
+            const menuButtons = `<div class="menu" onclick="showMenu(this)">
+                                    <button class="menuButton">
+                                        <span>&#9711;</span><br>
+                                        <span>&#9711;</span><br>
+                                        <span>&#9711;</span>
+                                    </button>   
+                                </div>
+                                <div id="menu-dropdown" class="menu-dropdown">
+                                    <ul style="list-style-type: none;padding-left: 0;font-size: 15px;line-height: 25px;">
+                                        <li><a onclick="remove(this)" style="cursor: pointer;">Remove</a></li>
+                                    </ul>
+                                </div>`;
             (function ($) {
 
             var item,
@@ -90,9 +105,10 @@
                 var initPageY = null;
                 var pointerProperty = null;
                 $(document).mousedown(function (e) {
-                    if(overMiddle && !inUse && inUseByElem === null){
+                    if(overMiddle && !inUse && inUseByElem === null && !overlayActive && document.getElementById(e.target.id) != null){
                         document.getElementById(e.target.id).style.pointerEvents = 'none';
                         pointerProperty = e.target.id;
+                        // console.log(e.target.id);
                         document.querySelectorAll(".resizable").forEach((x)=>{
                             x.removeEventListener('mouseover',addResizable);
                             x.addEventListener('mouseenter',checkRectanglesMove,true);
@@ -179,7 +195,16 @@
             }(jQuery));
 
 
+            // (function ($) {
 
+            // $.fn.addMenuOptions = function( options ) {
+            //     item = this;
+            //     item.innerHTML += 
+                 
+            //     return this;
+            // }
+
+            // }(jQuery));
 
 
             window.onload = (function () {
@@ -189,8 +214,10 @@
                 window.addEventListener("resize",resizer);
                 document.querySelectorAll(".resizable").forEach((x)=>{
                     x.addEventListener('mouseover',addResizable);
+                    x.innerHTML+=menuButtons;
                 });
             })();
+
 
             function addResizable(e){
                 elem = "#" + e.target.id;
@@ -208,6 +235,50 @@
                 })
                 // document.querySelectorAll(".resizable").forEach((x)=>{
                 // })
+            }
+
+            var savedMenu = null;
+            function showMenu(elem) {
+                var overlay = document.createElement('div');
+                overlay.setAttribute('id',"overlay");
+                overlay.style.width = "100%";
+                overlay.style.height = "100%";
+                overlay.style.background = "rgba(0,0,0,0.2)";
+                overlay.style.position = 'absolute';
+                overlay.style.top = 0;
+                overlay.style.left = 0;
+                overlay.style.zIndex = 500;
+                document.body.appendChild(overlay);
+                var menu = elem.nextElementSibling;
+                if(menu.classList.contains('show')
+                    || menu.classList.contains('hide')){
+                    menu.classList.toggle('hide');
+                }
+                menu.classList.toggle('show');
+                overlay.addEventListener('click',hideMenu,false);
+                menu.addEventListener('click',menuClick,false);
+                document.querySelectorAll(".resizable").forEach((x)=>{
+                    x.removeEventListener('mouseover', addResizable);
+                });
+                overlayActive = true;
+                savedMenu = menu;
+            }
+            function hideMenu(elem){
+                if(savedMenu.classList.contains('show')){
+                    savedMenu.classList.toggle('hide');
+                }
+                // savedMenu.classList.toggle('hide');
+                savedMenu.classList.toggle('show');
+                document.getElementById("overlay").remove();
+                elem.stopPropagation();
+                document.querySelectorAll(".resizable").forEach((x)=>{
+                    x.addEventListener('mouseover', addResizable);
+                });
+                overlayActive = false;
+                
+            }
+            function menuClick(e){
+                e.stopPropagation();
             }
 
             function checkRectanglesMove(e){
@@ -528,9 +599,11 @@
                 if($(elem).outerWidth() > $(elem).outerHeight()){
                     if(orientation === 'left'){
                         newDiv2.innerHTML = stored;
+                        newDiv1.innerHTML = menuButtons;
                     }
                     else{
                         newDiv1.innerHTML = stored;
+                        newDiv2.innerHTML = menuButtons;
                     }
                     var id = "x" + xResizers++;
                     $(elem).addClass("resizable-x")
@@ -553,9 +626,11 @@
                 else{
                     if(orientation === 'top'){
                         newDiv2.innerHTML = stored;
+                        newDiv1.innerHTML = menuButtons;
                     }
                     else{
                         newDiv1.innerHTML = stored;
+                        newDiv2.innerHTML = menuButtons;
                     }
                     var id = "y" + yResizers++;
                     $(elem).addClass("resizable-y")
@@ -583,6 +658,89 @@
                     x.replaceWith(repl);
                 });
                 elemBeingAdded = false;
+                resizer();
+            }
+
+            function remove(elem){
+                var ancestorNode = elem.parentNode.parentNode.parentNode.parentNode;
+                var parent = ancestorNode.parentNode;
+
+                var ancestorDataId = ancestorNode.children[0].id;
+                var str;
+                if(ancestorDataId.includes('data')){
+                    str = onMsg.toString().replace(/\s/g,'');
+                    strlen = str.length;
+                    start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    if(str.includes(ancestorDataId)){
+                        var dataIndex = str.indexOf(ancestorDataId);
+                        var startIndex = str.lastIndexOf(";",dataIndex) + 1;
+                        var endIndex = str.indexOf(";",dataIndex) + 1;
+                        var substringToRemove = str.substring(startIndex, endIndex);
+                        str = str.replace(substringToRemove,"");  
+                    }
+                    onMsg = new Function('e',str);
+                }
+                else if(ancestorDataId.includes('meter')){
+                    str = meterUpdate.toString().replace(/\s/g,'');
+                    strlen = str.length;
+                    start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    if(str.includes(ancestorDataId)){
+                        var dataIndex = str.indexOf(ancestorDataId);
+                        var startIndex = str.lastIndexOf(";",dataIndex) + 1;
+                        var endIndex = str.indexOf(";",dataIndex) + 1;
+                        var substringToRemove = str.substring(startIndex, endIndex);
+                        str = str.replace(substringToRemove,"");  
+                    }
+                    meterUpdate = new Function('e',str);
+                }
+                else if(ancestorDataId.includes('graph')){
+                    str = graphUpdate.toString().replace(/\s/g,'');
+                    strlen = str.length;
+                    start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    if(str.includes(ancestorDataId)){
+                        var dataIndex = str.indexOf(ancestorDataId);
+                        var startIndex = str.lastIndexOf(";",dataIndex) + 1;
+                        var endIndex = str.indexOf(";",dataIndex) + 1;
+                        var substringToRemove = str.substring(startIndex, endIndex);
+                        str = str.replace(substringToRemove,"");  
+                    }
+                    graphUpdate = new Function('e','...more',str);
+                }
+                var stored;
+                var storedClassName;
+                if(ancestorNode === parent.children[2]){
+                    stored = parent.children[0].innerHTML;
+                    storedClassName = parent.children[0].classList;
+                }
+                else if(ancestorNode === parent.children[0]){
+                    stored = parent.children[2].innerHTML;
+                    storedClassName = parent.children[2].classList;
+                }
+                var resizerToRemove = '#' + parent.children[1].id;
+                parent.classList = storedClassName;
+                parent.innerHTML = stored;
+                parent.replaceWith(parent.cloneNode(true));
+                str = resizer.toString().replace(/\s/g,'');
+                var strlen = str.length;
+                var start = str.indexOf('{');
+                str = str.substring(start+1,strlen-1);
+                if(str.includes(resizerToRemove)){
+                    var dataIndex = str.indexOf(resizerToRemove);
+                    var startIndex = str.lastIndexOf(";",dataIndex) + 1;
+                    var endIndex = str.indexOf(";",dataIndex) + 1;
+                    var substringToRemove = str.substring(startIndex, endIndex);
+                    str = str.replace(substringToRemove,"");  
+                }
+                resizer = new Function(str);
+
+                document.getElementById("overlay").remove();
+                document.querySelectorAll(".resizable").forEach((x)=>{
+                    x.addEventListener('mouseover', addResizable);
+                });
+                overlayActive = false;
                 resizer();
             }
 
@@ -699,10 +857,12 @@
                 if(thisNum === 'None'){
                     thisNum = lastNum;
                 }
+                thisNum = Number(e.data);
+                thisNum = thisNum.toFixed(5);
                 if(thisNum > maxNum){
                     maxNum = parseInt(thisNum);
                 }
-                lastNum = e.data;
+                lastNum = thisNum;
                 $("#data1").text(thisNum);
                 $("#data2").text(thisNum);
                 $("#data3").text(thisNum);
@@ -721,7 +881,7 @@
 
             function scaleCanvas(elem){
                 var c=document.getElementById(elem);
-                scaleFactor = 2;
+                scaleFactor = 3;
                 c.width = Math.ceil(c.width * scaleFactor);
                 c.height = Math.ceil(c.height * scaleFactor);
             }
@@ -734,7 +894,7 @@
             function animateMeter(elem, maxVal){
                 // thisNum = parseInt(thisNum);
                 var c=document.getElementById(elem);
-                scaleFactor = 2;
+                scaleFactor = 3;
                 // // c.style.width = c.style.width || c.width + 'px';
                 // // c.style.height = c.style.height || c.height + 'px';
 
@@ -814,7 +974,7 @@
             function animateGraph(e, elem, ...more){
                 // thisNum = parseInt(thisNum);
 
-                var tempNum = e.data;
+                var tempNum = Number(e.data).toFixed(5);
                 var maxPoints = 500;
                 if(graphMap.length === maxPoints){
                     graphMap.shift();
@@ -826,7 +986,7 @@
                     graphMap.push(0);
                 }
                 var c=document.getElementById(elem);
-                scaleFactor = 2;
+                scaleFactor = 3;
                 var lineGraphs = 1 + more.length;
                 ctx = c.getContext("2d");
                 ctx.clearRect(0, 0, c.width, c.height);
@@ -912,7 +1072,7 @@
                         newMap.shift();
                     }
                     if(e.data != null){
-                        newMap.push(150 - e.data);
+                        newMap.push(150 - Number(e.data).toFixed(5));
                     }
                     else{
                         newMap.push(0);
