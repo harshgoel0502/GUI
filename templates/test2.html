@@ -43,6 +43,8 @@
                         <div id="y2" class="resizer-y"></div>
                         <div id="block9" class="resizable-y" style="flex: 66.66%;position:relative;">
                             <div id="block10" class="resizable" style="flex: 33.33%;position:relative;">
+                                <canvas id="meter5" class="meter" style="width: 80%;">
+                                </canvas>
                             </div>
                             <div id="y3" class="resizer-y"></div>
                             <div id="block11" class="resizable" style="flex: 33.33%;position:relative;">
@@ -52,23 +54,23 @@
                         </div>
                     </div>
                     <div id="x1" class="resizer-x"></div>
-                    <div id="block12" class="resizable-y" style="flex: 50%;">
-                        <div id="block13" class="resizable" style="flex: 33.33%;position:relative;">
+                    <div id="block12" class="resizable" style="flex: 50%;">
+                        <iframe src="http://127:0:0:1:7000" height="100%" width="100%" style="border: none;"></iframe>
+                        <!-- <div id="block13" class="resizable" style="flex: 33.33%;position:relative;">
                             <div id="data3" class="data">
                             </div>
                         </div>
                         <div id="y4" class="resizer-y"></div>
                         <div id="block14" class="resizable-y" style="flex: 66.66%;position:relative;">
                             <div id="block15" class="resizable" style="flex: 33.33%;position:relative;">
-                                <canvas id="meter5" class="meter" style="width: 80%;">
-                                </canvas>
+                                
                             </div>
                             <div id="y5" class="resizer-y"></div>
                             <div id="block16" class="resizable" style="flex: 33.33%;position:relative;">
                                 <canvas id="graph8" class="graph" style="width: 80%;">
                                 </canvas>
                             </div>
-                        </div>
+                        </div> -->
                     </div>
                 </div>
             </div>
@@ -216,6 +218,7 @@
                     x.addEventListener('mouseover',addResizable);
                     x.innerHTML+=menuButtons;
                 });
+                document.querySelector('iframe').src = window.location.href.substring(0,window.location.href.length-5) + '8001/'; 
             })();
 
 
@@ -342,9 +345,9 @@
             }
 
             
-            var blocks = 16;
+            var blocks = 12;
             var xResizers = 2;
-            var yResizers = 6;
+            var yResizers = 4;
 
             function checkRectangles(e){
                 document.querySelectorAll(".resizable").forEach((x)=>{
@@ -564,8 +567,8 @@
                 resizableY("#y1");
                 resizableY("#y2");
                 resizableY("#y3");
-                resizableY("#y4");
-                resizableY("#y5");
+                // resizableY("#y4");
+                // resizableY("#y5");
             }
 
             // function previewRectangle(elem){
@@ -865,7 +868,7 @@
                 lastNum = thisNum;
                 $("#data1").text(thisNum);
                 $("#data2").text(thisNum);
-                $("#data3").text(thisNum);
+                // $("#data3").text(thisNum);
             }
 
             var setupMeters = function() {
@@ -876,7 +879,7 @@
             var setupGraphs = function() {
                 scaleCanvas("graph6");
                 scaleCanvas("graph7");
-                scaleCanvas("graph8");
+                // scaleCanvas("graph8");
             }
 
             function scaleCanvas(elem){
@@ -968,7 +971,7 @@
             var graphUpdate = function(e, ...more) {
                 animateGraph(e, "graph6");
                 animateGraph(e, "graph7");
-                animateGraph(e, "graph8");
+                // animateGraph(e, "graph8");
             }
 
             function animateGraph(e, elem, ...more){
