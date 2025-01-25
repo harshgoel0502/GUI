@@ -3,11 +3,11 @@ import time
 from flask import Flask, redirect, request, Response, url_for, render_template
 import numpy as np
 import serial
-import socketio
+# import socketio
 
 app = Flask(__name__, template_folder='templates')
 
-serial_port = 'COM12'  
+serial_port = '/dev/ttyUSB0'  
 baud_rate = 115200
 ser = serial.Serial(serial_port, baud_rate)
 

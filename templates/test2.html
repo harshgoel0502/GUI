@@ -1111,15 +1111,11 @@
         </script>
         <script>
             var onMsg = function(e) {
-                thisNum = e.data;
+                thisNum = map.get(e);
                 if(thisNum === 'None'){
                     thisNum = lastNum;
                 }
-                thisNum = Number(e.data);
                 thisNum = thisNum.toFixed(5);
-                if(thisNum > maxNum){
-                    maxNum = parseInt(thisNum);
-                }
                 lastNum = thisNum;
                 $("#data1").text(thisNum);
                 $("#data2").text(thisNum);
@@ -1144,12 +1140,14 @@
                 c.height = Math.ceil(c.height * scaleFactor);
             }
 
-            var meterUpdate = function(e) {
-                animateMeter("meter4", 150);
-                animateMeter("meter5", 150);
+            var meterUpdate = function(name) {
+                animateMeter(name, "meter4", mapMax.get(name)*1.2);
+                animateMeter(name, "meter5", mapMax.get(name)*1.2);
             }
 
-            function animateMeter(elem, maxVal){
+            function animateMeter(Name, elem, maxVal){
+                var e = map.get(Name);
+                var maxNum = mapMax.get(Name);
                 // thisNum = parseInt(thisNum);
                 var c=document.getElementById(elem);
                 c.style.width = "80%";
@@ -1168,12 +1166,12 @@
                 ctx.scale(scaleFactor, scaleFactor);
                 ctx.font = "15px SpaceMono";
                 ctx.fillStyle = "white";
-                var textInteger = parseInt(thisNum);
-                var textDecimal = ((thisNum - textInteger).toFixed(2)).toString().substring(1);
+                var textInteger = parseInt(e);
+                var textDecimal = ((e - textInteger).toFixed(2)).toString().substring(1);
                 textInteger = textInteger.toString().padStart(3," ");
                 ctx.fillText(textInteger+textDecimal,-30,0);
                 var piDiv = 120;
-                var numBlocks = Math.floor(parseInt(thisNum)*piDiv/maxVal);
+                var numBlocks = Math.floor(parseInt(e)*piDiv/maxVal);
                 for(var i = 0; i <= numBlocks; i ++){
                     ctx.beginPath();
                     var rad = i*Math.PI/piDiv;
@@ -1234,11 +1232,11 @@
                 sinV = Math.sin(maxNum*Math.PI/maxVal);
                 path.moveTo(-115 * cosV, -115 * sinV);
                 
-                cosV = Math.cos((maxNum-1)*Math.PI/maxVal);
-                sinV = Math.sin((maxNum-1)*Math.PI/maxVal);
+                cosV = Math.cos((maxNum-(1/maxVal))*Math.PI/maxVal);
+                sinV = Math.sin((maxNum-(1/maxVal))*Math.PI/maxVal);
                 path.lineTo(-118 * cosV, -118 * sinV);
-                cosV = Math.cos((maxNum+1)*Math.PI/maxVal);
-                sinV = Math.sin((maxNum+1)*Math.PI/maxVal);
+                cosV = Math.cos((maxNum+(1/maxVal))*Math.PI/maxVal);
+                sinV = Math.sin((maxNum+(1/maxVal))*Math.PI/maxVal);
                 path.lineTo(-118 * cosV, -118 * sinV);
                 ctx.font = "7px SpaceMono";
                 ctx.fillStyle = "white";
@@ -1250,26 +1248,35 @@
                 // requestAnimationFrame(animate);
             }
 
-            var graphUpdate = function(e, ...more) {
-                animateGraph(e, "graph6");
-                animateGraph(e, "graph7");
+            var graphUpdate = function(name, ...more) {
+                animateGraph(name, "graph6");
+                animateGraph(name, "graph7");
                 // animateGraph(e, "graph8");
             }
             var len = 0;
-            function animateGraph(e, elem, ...more){
+            function animateGraph(name, elem, ...more){
                 // thisNum = parseInt(thisNum);
-
-                var tempNum = Number(e.data).toFixed(5);
+                var e = map.get(name);
+                var tempNum = Number(e).toFixed(5);
                 var maxPoints = 500;
-                if(graphMap.length === maxPoints){
-                    graphMap.shift();
+                var tempMaxNum = 0;
+                var graphMap = [];
+                for(var i = 0; i < StoredData.length; i++){
+                    let temp = StoredData[i].get(name);
+                    graphMap.push(temp);
+                    if(temp > tempMaxNum){
+                        tempMaxNum = temp;
+                    }
                 }
-                if(tempNum != null){
-                    graphMap.push(tempNum);
-                }
-                else{
-                    graphMap.push(0);
-                }
+                // if(graphMap.length === maxPoints){
+                //     graphMap.shift();
+                // }
+                // if(tempNum != null){
+                //     graphMap.push(tempNum);
+                // }
+                // else{
+                //     graphMap.push(0);
+                // }
                 len++;
                 var c=document.getElementById(elem);
                 scaleFactor = 2;
@@ -1277,15 +1284,13 @@
                 ctx = c.getContext("2d");
                 ctx.clearRect(0, 0, c.width, c.height);
                 ctx.scale(scaleFactor, scaleFactor);
-                var tempMaxNum;
+                
                 var colours = [];
                 for(var j = 0; j < lineGraphs; j++){
                     if(j == 0){
-                        tempMaxNum = Math.max(...graphMap);
                         colours.push(["rgb(127.5,0,0)","rgba(127.5,0,0,0.1)", "rgba(127.5,0,0,0.05)"]);
                     }
                     else{
-                        tempMaxNum = Math.max(...(more[j-1]), tempMaxNum);
                         colours.push(["rgb(0,127.5,0)","rgba(0,127.5,0,0.1)","rgba(0,127.5,0,0.05)"]);
                     }
                 }
@@ -1384,24 +1389,69 @@
                 setupMeters();
                 setupGraphs();
                 var newMap = [];
-                
+                var map = new Map();
+                var mapMax = new Map();
+                var StoredData = [];
+                var count = 0;
+                const packetVals = [
+                    "Packet Number",
+                    "Time Since Arming",
+                    "GyroX",
+                    "GyroY",
+                    "GyroZ",
+                    "AccX",
+                    "AccY",
+                    "AccZ",
+                    "MagX",
+                    "MagY",
+                    "MagZ",
+                    "QuatX",
+                    "QuatY",
+                    "QuatZ",
+                    "QuatW",
+                    "IMU Temperature",
+                    "Barometer Pressure",
+                    "Barometer Altitude",
+                    "Barometer Temperature",
+                    "Barometer Velocity",
+                    "GPS Latitude",
+                    "GPS Longitude",
+                    "GPS Altitude",
+                    "GPS Velocity",
+                    "GPS Satellites",
+                    "GPS Heaiding",
+                    "Battery Voltage",
+                    "Flight State",
+                    "SD Log State",
+                    "Flash Log State"
+                ]
             // var ctx = c.getContext("2d");
                 // ctx.translate(c.width/2, c.height - 1/10*c.height);
 
                 source.onmessage = function(e){
-                    console.log(e);
-                    if(newMap.length === 500){
-                        newMap.shift();
+                    map = new Map();
+                    count = 0;
+                    // console.log(e);
+                    var data = e.data;
+                    var nextBreak;
+                    
+                    while((nextBreak = data.indexOf(',')) !== -1){
+                        let dataToAdd = Number(data.substring(0,nextBreak));
+                        map.set(packetVals[count], dataToAdd);
+                        if(mapMax.get(packetVals[count]) === undefined|| dataToAdd > mapMax.get(packetVals[count])){
+                            mapMax.set(packetVals[count], dataToAdd);
+                        }
+                        data = data.substring(nextBreak+1);
+                        count++;
                     }
-                    if(e.data != null){
-                        newMap.push(150 - Number(e.data).toFixed(5));
+                    if(StoredData.length === 500){
+                        StoredData.shift();
                     }
-                    else{
-                        newMap.push(0);
-                    }
-                    onMsg(e);
-                    meterUpdate(e);
-                    graphUpdate(e);
+                    StoredData.push(map);
+
+                    onMsg("Packet Number");
+                    meterUpdate("AccZ");
+                    graphUpdate("MagX");
                 };
                 
             }
