@@ -26,7 +26,7 @@ def test():
     #             #     time.sleep(20)
     #             time.sleep(.04)
     #     return Response(events(), content_type='text/event-stream')
-    return render_template('test3.html')
+    return render_template('rocket3D.html')
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port='8001', debug=True)

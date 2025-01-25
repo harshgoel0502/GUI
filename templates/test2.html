@@ -2,9 +2,21 @@
 
 <html>
     <head>
-        <link rel="stylesheet" href={{ url_for('static',filename='styles/test2.css') }}></style>
+        <title>Telemetry</title>
+        <link rel="icon" type="image/x-icon" href={{url_for('static',filename='logos/ed_logo_white_square.ico')}}>
+        <link rel="stylesheet" href={{url_for('static',filename='styles/test2.css')}}></style>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
     </head>
     <body>
+        <div id="loader" class="loadingScreen">
+            <img src="/static/logos/ed_logo_white_square.png" style="height: 100px;width: 100px;position: absolute;">
+            <img id="loadingRocket" src="/static/logos/rocketRotateSmoke.png" style="position: absolute;height: 250px;width: 250px;animation: rotation 2s infinite ease-in-out;">
+        </div>
         <script src="http://code.jquery.com/jquery-latest.js"></script>
         <div id="sideBar">
             <button id="addPlus" class="add_plus" onclick="animateButton(this)">
@@ -23,12 +35,12 @@
                     <div id="y0" class="resizer-y"></div>
                     <div id="block3" class="resizable-y" style="flex: 66.66%;position:relative;">
                         <div id="block4" class="resizable" style="flex: 33.33%;position:relative;">
-                            <canvas id="meter4" class="meter" style="width: 80%;">
+                            <canvas id="meter4" class="meter" style="width: 100%; height: 100%;">
                             </canvas>
                         </div>
                         <div id="y1" class="resizer-y"></div>
                         <div id="block5" class="resizable" style="flex: 33.33%;position:relative;">
-                            <canvas id="graph6" class="graph" style="width: 80%;">
+                            <canvas id="graph6" class="graph" style="width: 100%;">
                             </canvas>
                         </div>
                     </div>
@@ -43,19 +55,29 @@
                         <div id="y2" class="resizer-y"></div>
                         <div id="block9" class="resizable-y" style="flex: 66.66%;position:relative;">
                             <div id="block10" class="resizable" style="flex: 33.33%;position:relative;">
-                                <canvas id="meter5" class="meter" style="width: 80%;">
+                                <canvas id="meter5" class="meter" style="width: 100%; height: 100%;">
                                 </canvas>
                             </div>
                             <div id="y3" class="resizer-y"></div>
                             <div id="block11" class="resizable" style="flex: 33.33%;position:relative;">
-                                <canvas id="graph7" class="graph" style="width: 80%;">
+                                <canvas id="graph7" class="graph" style="width: 100%;">
                                 </canvas>
                             </div>
                         </div>
                     </div>
                     <div id="x1" class="resizer-x"></div>
-                    <div id="block12" class="resizable" style="flex: 50%;">
-                        <iframe src="http://127:0:0:1:7000" height="100%" width="100%" style="border: none;"></iframe>
+
+                    <div id="block12" class="resizable-y" style="flex: 50%;position: relative;">
+                        <div id="block13" class="resizable" style="flex: 50%;position:relative;">
+                            <div id="map" style="position: relative;width: 100%;height: 100%;">
+                            </div>
+                        </div>
+                        <div id="y4" class="resizer-y"></div>
+                        <div id="block14" class="resizable" style="flex: 50%;position:relative;">
+                            <iframe  src="http://127:0:0:1:7000" height="100%" width="100%" style="border: none;"></iframe>
+                        </div>
+
+                        <!-- <iframe  src="http://127:0:0:1:7000" height="100%" width="100%" style="border: none;"></iframe> -->
                         <!-- <div id="block13" class="resizable" style="flex: 33.33%;position:relative;">
                             <div id="data3" class="data">
                             </div>
@@ -67,7 +89,7 @@
                             </div>
                             <div id="y5" class="resizer-y"></div>
                             <div id="block16" class="resizable" style="flex: 33.33%;position:relative;">
-                                <canvas id="graph8" class="graph" style="width: 80%;">
+                                <canvas id="graph8" class="graph" style="width: 100%;">
                                 </canvas>
                             </div>
                         </div> -->
@@ -76,6 +98,10 @@
             </div>
         
         <script>
+            var blocks = 14;
+            var xResizers = 2;
+            var yResizers = 5;
+
             var inUse, inUseByElem = null;
             var orientation = null;
             var elemBeingAdded = false;
@@ -83,7 +109,7 @@
             var menuHeight = null;
             var menuWidth = null;
             const menuButtons = `<div class="menu" onclick="showMenu(this)">
-                                    <button class="menuButton">
+                                    <button class="menuButton leaflet-top leaflet-right" style="pointer-events:auto;">
                                         <span>&#9711;</span><br>
                                         <span>&#9711;</span><br>
                                         <span>&#9711;</span>
@@ -115,6 +141,16 @@
                             x.removeEventListener('mouseover',addResizable);
                             x.addEventListener('mouseenter',checkRectanglesMove,true);
                         });
+                        if(document.querySelectorAll('iframe') != null){
+                            document.querySelectorAll('iframe').forEach((x)=>{ 
+                                x.style.pointerEvents = 'none'
+                            });
+                        }
+                        if(document.querySelectorAll('#map') != null){
+                            document.querySelectorAll('#map').forEach((x)=>{ 
+                                x.style.pointerEvents = 'none'
+                            });
+                        }
                         originalLocation = item.offset();
                         document.querySelector(item.selector).style.zIndex = '200';   
                         document.querySelector(item.selector).style.opacity = '0.7';     
@@ -143,7 +179,21 @@
                         // document.querySelector(item.selector).style.position = 'relative';
                             document.querySelector(item.selector).style.zIndex = '0';  
                             document.querySelector(item.selector).style.opacity = '1';
+
+                            if(document.querySelectorAll('iframe') != null){
+                                document.querySelectorAll('iframe').forEach((x)=>{ 
+                                    x.style.pointerEvents = 'auto'
+                                });
+                            }
                         }       
+                        if(document.querySelectorAll('#map') != null){
+                            document.querySelectorAll('#map').forEach((x)=>{ 
+                                x.parentNode.removeEventListener('mouseover',addResizable);
+                                x.parentNode.style.pointerEvents = 'auto';
+                                x.style.pointerEvents = 'auto';
+                                //reloadMap();
+                            });
+                        }
                         inUse = false;
                         inUseByElem = null;
                         beingDragged = false;
@@ -211,16 +261,62 @@
 
             window.onload = (function () {
                 "use strict";
+                // if(document.getElementById('map') != null){
+                //     document.getElementById('map').style.height = $("#" + document.getElementById('map').parentNode.id).innerHeight() + 'px';
+                // }
+                if(document.querySelectorAll('.resizable-x') != null){
+                    xResizers = document.querySelectorAll('.resizable-x').length;
+                }
+                if(document.querySelectorAll('.resizable-y') != null){
+                    yResizers = document.querySelectorAll('.resizable-y').length;
+                }
+                if(document.querySelectorAll('.resizable') != null){
+                    blocks = document.querySelectorAll('.resizable').length +xResizers + yResizers - 1;
+                }
+                var str = resizer.toString().replace(/\s/g,'');
+                // if(resizerToRemove.includes('x')){
+                //     str = str.replace("resizableX(\"#"+resizerToRemove+"\");","resizableY(\"#"+resizerToRemove+"\");");  
+                // }
+                var strlen = str.length;
+                var start = str.indexOf('{');
+                str = str.substring(start+1,strlen-1);
+                for(var i = 0; i < xResizers; i ++){
+                    str = str + "resizableX(\"#x"+ i +"\");";
+                }
+                for(var j = 0; j < yResizers; j++){
+                    str = str + "resizableY(\"#y"+ j +"\");";
+                }
+                resizer = new Function(str); 
                 resizer();
+
                 var reload = false;
                 window.addEventListener("resize",resizer);
                 document.querySelectorAll(".resizable").forEach((x)=>{
                     x.addEventListener('mouseover',addResizable);
                     x.innerHTML+=menuButtons;
                 });
+
+                addCustomMoveButton('#map');
+                addCustomMoveButton('iframe');
+
                 document.querySelector('iframe').src = window.location.href.substring(0,window.location.href.length-5) + '8001/'; 
+                document.querySelectorAll("#map").forEach((x)=>{
+                    x.parentNode.removeEventListener('mouseover',addResizable);
+                });
             })();
 
+
+            function addCustomMoveButton(elem){
+                var moveItem = document.querySelector(elem);
+                var elemParent = moveItem.parentNode;
+                var moveElem = document.createElement('li');
+                var moveLink = document.createElement('a');
+                moveLink.setAttribute("onclick","Move(document.querySelector('"+elem+"'))");
+                moveLink.style.cursor = 'pointer';
+                moveLink.innerHTML = 'Move';
+                moveElem.appendChild(moveLink);
+                moveItem.parentNode.children[2].children[0].appendChild(moveElem);
+            }
 
             function addResizable(e){
                 elem = "#" + e.target.id;
@@ -242,6 +338,9 @@
 
             var savedMenu = null;
             function showMenu(elem) {
+                document.querySelectorAll('.menuButton').forEach(x => {
+                    x.style.pointerEvents = 'none';
+                });
                 var overlay = document.createElement('div');
                 overlay.setAttribute('id',"overlay");
                 overlay.style.width = "100%";
@@ -267,6 +366,7 @@
                 savedMenu = menu;
             }
             function hideMenu(elem){
+                
                 if(savedMenu.classList.contains('show')){
                     savedMenu.classList.toggle('hide');
                 }
@@ -278,8 +378,36 @@
                     x.addEventListener('mouseover', addResizable);
                 });
                 overlayActive = false;
-                
+                document.querySelectorAll('.menuButton').forEach(x => {
+                    x.style.pointerEvents = 'auto';
+                });
+                if(document.querySelectorAll('#map') != null){
+                    document.querySelectorAll('#map').forEach((x)=>{ 
+                        x.parentNode.removeEventListener('mouseover',addResizable);
+                        x.parentNode.style.pointerEvents = 'auto';
+                        x.style.pointerEvents = 'auto';
+                        //reloadMap();
+                    });
+                }
             }
+
+            function Move(elem){
+                elem.style.pointerEvents = 'none';
+                if(savedMenu.classList.contains('show')){
+                    savedMenu.classList.toggle('hide');
+                }
+                // savedMenu.classList.toggle('hide');
+                savedMenu.classList.toggle('show');
+                document.getElementById("overlay").remove();
+                document.querySelectorAll(".resizable").forEach((x)=>{
+                    x.addEventListener('mouseover', addResizable);
+                });
+                overlayActive = false;
+                document.querySelectorAll('.menuButton').forEach(x => {
+                    x.style.pointerEvents = 'auto';
+                });
+            }
+
             function menuClick(e){
                 e.stopPropagation();
             }
@@ -345,9 +473,7 @@
             }
 
             
-            var blocks = 12;
-            var xResizers = 2;
-            var yResizers = 4;
+            
 
             function checkRectangles(e){
                 document.querySelectorAll(".resizable").forEach((x)=>{
@@ -425,6 +551,9 @@
                 e.preventDefault();
                 resizer.addEventListener("touchmove", ontouchmove);
                 resizer.addEventListener("touchend", ontouchend);
+                document.querySelectorAll('iframe').forEach((x)=>{
+                    x.style.pointerEvents = 'none';
+                });
                 }
                 function ontouchmove(e) {
                 e.preventDefault();
@@ -451,6 +580,9 @@
                 resizer.removeEventListener("touchmove", ontouchmove);
                 resizer.removeEventListener("touchend", ontouchend);
                 delete e._clientX;
+                document.querySelectorAll('iframe').forEach((x)=>{
+                    x.style.pointerEvents = 'auto';
+                });
                 }
 
                 // for desktop
@@ -458,6 +590,9 @@
                 e.preventDefault();
                 document.addEventListener("mousemove", onmousemove);
                 document.addEventListener("mouseup", onmouseup);
+                document.querySelectorAll('iframe').forEach((x)=>{
+                    x.style.pointerEvents = 'none';
+                });
                 }
                 function onmousemove(e) {
                 e.preventDefault();
@@ -484,11 +619,15 @@
                 document.removeEventListener("mousemove", onmousemove);
                 document.removeEventListener("mouseup", onmouseup);
                 delete e._clientX;
+                document.querySelectorAll('iframe').forEach((x)=>{
+                    x.style.pointerEvents = 'auto';
+                });
                 }
             }
 
             // vertical direction
             function resizableY(resizableName) {
+                
                 const resizer = document.querySelector(resizableName);
                 resizer.addEventListener("mousedown", onmousedown);
                 resizer.addEventListener("touchstart", ontouchstart);
@@ -498,6 +637,9 @@
                 e.preventDefault();
                 resizer.addEventListener("touchmove", ontouchmove);
                 resizer.addEventListener("touchend", ontouchend);
+                document.querySelectorAll('iframe').forEach((x)=>{
+                    x.style.pointerEvents = 'none';
+                });
                 }
                 function ontouchmove(e) {
                 e.preventDefault();
@@ -524,6 +666,9 @@
                 resizer.removeEventListener("touchmove", ontouchmove);
                 resizer.removeEventListener("touchend", ontouchend);
                 delete e._clientY;
+                document.querySelectorAll('iframe').forEach((x)=>{
+                    x.style.pointerEvents = 'auto';
+                });
                 }
 
                 // for desktop
@@ -531,6 +676,9 @@
                 e.preventDefault();
                 document.addEventListener("mousemove", onmousemove);
                 document.addEventListener("mouseup", onmouseup);
+                document.querySelectorAll('iframe').forEach((x)=>{
+                    x.style.pointerEvents = 'none';
+                });
                 }
                 function onmousemove(e) {
                 e.preventDefault();
@@ -539,6 +687,7 @@
                 resizer._clientY = clientY;
                 const t = resizer.previousElementSibling;
                 const b = resizer.nextElementSibling;
+                
                 // UP
                 if (deltaY < 0) {
                     const h = Math.round(parseInt(getComputedStyle(t).height) + deltaY);
@@ -557,18 +706,13 @@
                 document.removeEventListener("mousemove", onmousemove);
                 document.removeEventListener("mouseup", onmouseup);
                 delete e._clientY;
+                document.querySelectorAll('iframe').forEach((x)=>{
+                    x.style.pointerEvents = 'auto';
+                });
                 }
             }
 
             function resizer(){
-                resizableX("#x0");
-                resizableX("#x1");
-                resizableY("#y0");
-                resizableY("#y1");
-                resizableY("#y2");
-                resizableY("#y3");
-                // resizableY("#y4");
-                // resizableY("#y5");
             }
 
             // function previewRectangle(elem){
@@ -662,6 +806,14 @@
                 });
                 elemBeingAdded = false;
                 resizer();
+                if(document.querySelectorAll('#map') != null){
+                    document.querySelectorAll('#map').forEach((x)=>{ 
+                        x.parentNode.removeEventListener('mouseover', addResizable);
+                        x.parentNode.style.pointerEvents = 'auto';
+                        x.style.pointerEvents = 'auto';
+                        reloadMap();
+                    });
+                }
             }
 
             function remove(elem){
@@ -745,6 +897,17 @@
                 });
                 overlayActive = false;
                 resizer();
+                if(document.querySelectorAll('#map') != null){
+                    document.querySelectorAll('#map').forEach((x)=>{ 
+                        x.parentNode.removeEventListener('mouseover', addResizable);
+                        x.parentNode.style.pointerEvents = 'auto';
+                        x.style.pointerEvents = 'auto';
+                        reloadMap();
+                    });
+                }
+                document.querySelectorAll('.menuButton').forEach(x => {
+                    x.style.pointerEvents = 'auto';
+                });
             }
 
             function relocate(elemToMoveTo, itemBeingMoved){
@@ -844,6 +1007,12 @@
                     resizer = new Function(str); 
                     // reload = true; 
                 }
+                if(document.querySelectorAll('iframe') != null){
+                    document.querySelectorAll('iframe').forEach((x)=>{ 
+                        x.style.pointerEvents = 'auto';
+                    });
+                }
+                
                 document.querySelector(elem).replaceWith(document.querySelector(elem).cloneNode(true));
                 document.querySelectorAll(".resizable").forEach((x)=>{
                     var repl = x.cloneNode(true);
@@ -851,6 +1020,92 @@
                     x.replaceWith(repl);
                 });
                 resizer();
+                if(document.querySelectorAll('#map') != null){
+                    document.querySelectorAll('#map').forEach((x)=>{ 
+                        x.parentNode.removeEventListener('mouseover', addResizable);
+                        x.parentNode.style.pointerEvents = 'auto';
+                        x.style.pointerEvents = 'auto';
+                        reloadMap();
+                    });
+                }
+            }
+            function reloadMap(){
+                // if(document.getElementById('map') != null){
+                //     document.getElementById('map').style.height = $("#" + document.getElementById('map').parentNode.id).innerHeight() + 'px';
+                // }
+                var bluemarker = L.icon({
+                    iconUrl: '/static/logos/pin.png',
+                    shadowUrl: '/static/logos/pin.png',
+
+                    iconSize:     [25, 25], // size of the icon
+                    shadowSize:   [0, 0], // size of the shadow
+                    iconAnchor:   [12, 22], // point of the icon which will correspond to marker's location
+                    shadowAnchor: [0, 0],  // the same for the shadow
+                    popupAnchor:  [12, 0] // point from which the popup should open relative to the iconAnchor
+                });
+                navigator.geolocation.getCurrentPosition(function (position) {
+                    var map = L.map('map', { center: [position.coords.latitude , position.coords.longitude], zoom: 16});
+                    var tile_layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 19,
+                        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    });
+                    tile_layer.addTo(map);
+                    var marker = L.marker([position.coords.latitude,position.coords.longitude],{icon: bluemarker}).addTo(map);
+                    // tile_layer.on("load",function() { 
+                    //     if(document.getElementById('loadingRocket')!=null){
+                    //     document.getElementById('loadingRocket').style.animation += ', fade 0.5s forwards ease-out';
+                    //     setTimeout(() => {
+                    //             document.getElementById('loadingRocket').remove();
+                    //             var loader = document.getElementById("loader");
+                    //             loader.style.animation = 'fade 1s forwards ease-out';
+                    //             setTimeout(() => {
+                    //                 document.getElementById("loader").remove()
+                    //             }, 1100); 
+                    //         },700);
+                    //     };
+                    // });
+
+                },
+                function (error){
+                    var map = L.map("map", { center: [51.450584 , -2.5946832], zoom: 12, zoomControl: false });
+                    var tile_layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 19,
+                        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    });
+                    tile_layer.addTo(map);
+                    // tile_layer.on("load",function() { 
+                    //     if(document.getElementById('loadingRocket')!=null){
+                    //     document.getElementById('loadingRocket').style.animation += ', fade 0.5s forwards ease-out';
+                    //     setTimeout(() => {
+                    //             document.getElementById('loadingRocket').remove();
+                    //             var loader = document.getElementById("loader");
+                    //             loader.style.animation = 'fade 1s forwards ease-out';
+                    //             setTimeout(() => {
+                    //                 document.getElementById("loader").remove()
+                    //             }, 1100); 
+                    //         },700);
+                    //     };
+                    // });
+                });
+                // var map = L.map('map').locate({setView: true, maxZoom: 16});;
+                // L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                //     maxZoom: 19,
+                //     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                // }).addTo(map);
+
+                // var bluemarker = L.icon({
+                //     iconUrl: '/static/logos/pin.png',
+                //     shadowUrl: '/static/logos/pin.png',
+
+                //     iconSize:     [25, 25], // size of the icon
+                //     shadowSize:   [0, 0], // size of the shadow
+                //     iconAnchor:   [12, 22], // point of the icon which will correspond to marker's location
+                //     shadowAnchor: [0, 0],  // the same for the shadow
+                //     popupAnchor:  [12, 0] // point from which the popup should open relative to the iconAnchor
+                // });
+                // navigator.geolocation.getCurrentPosition(function (position) {
+                //     var marker = L.marker([position.coords.latitude,position.coords.longitude],{icon: bluemarker}).addTo(map);
+                // })
             }
 
         </script>
@@ -884,7 +1139,7 @@
 
             function scaleCanvas(elem){
                 var c=document.getElementById(elem);
-                scaleFactor = 3;
+                scaleFactor = 2;
                 c.width = Math.ceil(c.width * scaleFactor);
                 c.height = Math.ceil(c.height * scaleFactor);
             }
@@ -897,7 +1152,9 @@
             function animateMeter(elem, maxVal){
                 // thisNum = parseInt(thisNum);
                 var c=document.getElementById(elem);
-                scaleFactor = 3;
+                c.style.width = "80%";
+                c.style.height = "auto";
+                scaleFactor = 2;
                 // // c.style.width = c.style.width || c.width + 'px';
                 // // c.style.height = c.style.height || c.height + 'px';
 
@@ -909,6 +1166,12 @@
                 ctx.translate(c.width/2, c.height - 1/10*c.height);
                 
                 ctx.scale(scaleFactor, scaleFactor);
+                ctx.font = "15px SpaceMono";
+                ctx.fillStyle = "white";
+                var textInteger = parseInt(thisNum);
+                var textDecimal = ((thisNum - textInteger).toFixed(2)).toString().substring(1);
+                textInteger = textInteger.toString().padStart(3," ");
+                ctx.fillText(textInteger+textDecimal,-30,0);
                 var piDiv = 120;
                 var numBlocks = Math.floor(parseInt(thisNum)*piDiv/maxVal);
                 for(var i = 0; i <= numBlocks; i ++){
@@ -964,6 +1227,25 @@
                 // console.log(maxNum);
                 ctx.arc(0,0, radius, Math.PI, (Math.PI +  Math.PI * maxNum/maxVal));
                 ctx.stroke();
+                var sWidth = c.width;
+                var sHeight = c.height;
+                var path=new Path2D();
+                cosV = Math.cos(maxNum*Math.PI/maxVal);
+                sinV = Math.sin(maxNum*Math.PI/maxVal);
+                path.moveTo(-115 * cosV, -115 * sinV);
+                
+                cosV = Math.cos((maxNum-1)*Math.PI/maxVal);
+                sinV = Math.sin((maxNum-1)*Math.PI/maxVal);
+                path.lineTo(-118 * cosV, -118 * sinV);
+                cosV = Math.cos((maxNum+1)*Math.PI/maxVal);
+                sinV = Math.sin((maxNum+1)*Math.PI/maxVal);
+                path.lineTo(-118 * cosV, -118 * sinV);
+                ctx.font = "7px SpaceMono";
+                ctx.fillStyle = "white";
+                ctx.textAlight = "end";
+                ctx.fillText(maxNum, -123 * cosV, -123 * sinV)
+                ctx.fill(path);
+                
                 ctx.resetTransform();
                 // requestAnimationFrame(animate);
             }
@@ -973,7 +1255,7 @@
                 animateGraph(e, "graph7");
                 // animateGraph(e, "graph8");
             }
-
+            var len = 0;
             function animateGraph(e, elem, ...more){
                 // thisNum = parseInt(thisNum);
 
@@ -988,19 +1270,13 @@
                 else{
                     graphMap.push(0);
                 }
+                len++;
                 var c=document.getElementById(elem);
-                scaleFactor = 3;
+                scaleFactor = 2;
                 var lineGraphs = 1 + more.length;
                 ctx = c.getContext("2d");
                 ctx.clearRect(0, 0, c.width, c.height);
                 ctx.scale(scaleFactor, scaleFactor);
-                ctx.beginPath();
-                ctx.strokeStyle = "#ffffff";
-                var scaleDenom = scaleFactor * 10
-                ctx.moveTo((0.5/scaleDenom)*c.width, (1/scaleDenom)*c.height);
-                ctx.lineTo((0.5/scaleDenom)*c.width, (9/scaleDenom)*c.height);
-                ctx.lineTo((9.5/scaleDenom)*c.width, (9/scaleDenom)*c.height);
-                ctx.stroke();
                 var tempMaxNum;
                 var colours = [];
                 for(var j = 0; j < lineGraphs; j++){
@@ -1013,6 +1289,47 @@
                         colours.push(["rgb(0,127.5,0)","rgba(0,127.5,0,0.1)","rgba(0,127.5,0,0.05)"]);
                     }
                 }
+                ctx.beginPath();
+                ctx.strokeStyle = "#ffffff";
+                var scaleDenom = scaleFactor * 10;
+                ctx.font = "7px SpaceMono";
+                ctx.fillStyle = 'white';
+                ctx.moveTo((1.3/scaleDenom)*c.width, (2/scaleDenom)*c.height);
+                ctx.fillText(parseInt(tempMaxNum).toString().padStart(3," "),(0.7/scaleDenom)*c.width, (2/scaleDenom)*c.height);
+                ctx.lineTo((1.5/scaleDenom)*c.width, (2/scaleDenom)*c.height);
+                ctx.lineTo((1.5/scaleDenom)*c.width, (4/scaleDenom)*c.height);
+
+                ctx.moveTo((1.3/scaleDenom)*c.width, (4/scaleDenom)*c.height);
+                ctx.fillText(parseInt(0.66*tempMaxNum).toString().padStart(3," "),(0.7/scaleDenom)*c.width, (4/scaleDenom)*c.height);
+                ctx.lineTo((1.5/scaleDenom)*c.width, (4/scaleDenom)*c.height);
+                ctx.lineTo((1.5/scaleDenom)*c.width, (6/scaleDenom)*c.height);
+
+                ctx.moveTo((1.3/scaleDenom)*c.width, (6/scaleDenom)*c.height);
+                ctx.fillText(parseInt(0.33*tempMaxNum).toString().padStart(3," "),(0.7/scaleDenom)*c.width, (6/scaleDenom)*c.height);
+                ctx.lineTo((1.5/scaleDenom)*c.width, (6/scaleDenom)*c.height);
+                ctx.lineTo((1.5/scaleDenom)*c.width, (8.2/scaleDenom)*c.height);
+                ctx.fillText(parseInt(len - maxPoints),(1.27/scaleDenom)*c.width, (8.7/scaleDenom)*c.height);
+                
+                ctx.moveTo((1.3/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+                ctx.fillText('0'.padStart(3," "),(0.7/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+
+                ctx.lineTo((3.83/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+
+                ctx.moveTo((3.83/scaleDenom)*c.width, (8.2/scaleDenom)*c.height);
+                ctx.fillText(len - maxPoints + parseInt(0.33*(maxPoints)),(3.6/scaleDenom)*c.width, (8.7/scaleDenom)*c.height);
+                ctx.lineTo((3.83/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+                ctx.lineTo((6.16/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+
+                ctx.moveTo((6.16/scaleDenom)*c.width, (8.2/scaleDenom)*c.height);
+                ctx.fillText(len - maxPoints + parseInt(0.66*(maxPoints)),(5.93/scaleDenom)*c.width, (8.7/scaleDenom)*c.height);
+                ctx.lineTo((6.16/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+                ctx.lineTo((8.5/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+                
+                ctx.moveTo((8.5/scaleDenom)*c.width, (8.2/scaleDenom)*c.height);
+                ctx.fillText(parseInt(len),(8.26/scaleDenom)*c.width, (8.7/scaleDenom)*c.height);
+                ctx.lineTo((8.5/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+
+                ctx.stroke();
                 for(var j = 0; j < lineGraphs; j++){
                     var newMap;
                     if(j == 0){
@@ -1032,7 +1349,7 @@
                     ctx.strokeStyle = colours[j][0];
                     ctx.lineWidth = "0.2";
                     timeline = newMap.length;
-                    ctx.moveTo((0.5/scaleDenom)*c.width, (9/scaleDenom)*c.height);
+                    ctx.moveTo((1.5/scaleDenom)*c.width, (8/scaleDenom)*c.height);
                     ctx.lineWidth = "1";
                     var scaleXAxis;
                     var scaleYAxis;
@@ -1041,17 +1358,18 @@
                         scaleXAxis = i/timeline;
                         scaleYAxis;
                         scaleYAxis = tempNum/tempMaxNum;
-                        ctx.lineTo(c.width*((0.5 + (scaleXAxis*9))/scaleDenom), c.height*((1+((1-scaleYAxis)*8))/scaleDenom));
+                        ctx.lineTo(c.width*((1.5 + (scaleXAxis*7))/scaleDenom), c.height*((2+((1-scaleYAxis)*6))/scaleDenom));
                     }    
+                    ctx.fillText(Number(tempNum).toFixed(2),(8.6/scaleDenom)*c.width, (2+((1-scaleYAxis)*6))*c.height/scaleDenom);
                     ctx.stroke();
-                    const grad=ctx.createLinearGradient(c.width*((0.5 + (scaleXAxis*9))/scaleDenom)
-                                                        , c.height*((1+((1-scaleYAxis)*8))/scaleDenom)
-                                                        , (9.5/scaleDenom)*c.width, (9/scaleDenom)*c.height);
+                    const grad=ctx.createLinearGradient(c.width*((1.5 + (scaleXAxis*7))/scaleDenom)
+                                                        , c.height*((2+((1-scaleYAxis)*6))/scaleDenom)
+                                                        , (8.5/scaleDenom)*c.width, (8/scaleDenom)*c.height);
                     grad.addColorStop(0, colours[j][1]);
                     grad.addColorStop(1, colours[j][2]); 
                     // ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
                     ctx.fillStyle = grad;
-                    ctx.lineTo((9.5/scaleDenom)*c.width, (9/scaleDenom)*c.height);
+                    ctx.lineTo((8.5/scaleDenom)*c.width, (8/scaleDenom)*c.height);
                     ctx.fill();
                 }
                 ctx.resetTransform();
@@ -1086,6 +1404,64 @@
                 };
                 
             }
+        </script>
+
+        <script>
+            var bluemarker = L.icon({
+                iconUrl: '/static/logos/pin.png',
+                shadowUrl: '/static/logos/pin.png',
+
+                iconSize:     [25, 25], // size of the icon
+                shadowSize:   [0, 0], // size of the shadow
+                iconAnchor:   [12, 22], // point of the icon which will correspond to marker's location
+                shadowAnchor: [0, 0],  // the same for the shadow
+                popupAnchor:  [12, 0] // point from which the popup should open relative to the iconAnchor
+            });
+            navigator.geolocation.getCurrentPosition(function (position) {
+                var map = L.map('map', { center: [position.coords.latitude , position.coords.longitude], zoom: 16});
+                var tile_layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                });
+                tile_layer.addTo(map);
+                var marker = L.marker([position.coords.latitude,position.coords.longitude],{icon: bluemarker}).addTo(map);
+                tile_layer.on("load",function() { 
+                    if(document.getElementById('loadingRocket')!=null){
+                    document.getElementById('loadingRocket').style.animation += ', fade 0.5s forwards ease-out';
+                    setTimeout(() => {
+                            document.getElementById('loadingRocket').remove();
+                            var loader = document.getElementById("loader");
+                            loader.style.animation = 'fade 1s forwards ease-out';
+                            setTimeout(() => {
+                                document.getElementById("loader").remove()
+                            }, 1100); 
+                        },700);
+                    };
+                });
+
+            },
+            function (error){
+                var map = L.map("map", { center: [51.450584 , -2.5946832], zoom: 12, zoomControl: false });
+                var tile_layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                });
+                tile_layer.addTo(map);
+                tile_layer.on("load",function() { 
+                    if(document.getElementById('loadingRocket')!=null){
+                    document.getElementById('loadingRocket').style.animation += ', fade 0.5s forwards ease-out';
+                    setTimeout(() => {
+                            document.getElementById('loadingRocket').remove();
+                            var loader = document.getElementById("loader");
+                            loader.style.animation = 'fade 1s forwards ease-out';
+                            setTimeout(() => {
+                                document.getElementById("loader").remove()
+                            }, 1100); 
+                        },700);
+                    };
+                });
+            });
+            
         </script>
         </div>
     </body>
