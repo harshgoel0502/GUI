@@ -94,7 +94,6 @@
 // function render() {
 //   renderer.render(scene, camera)
 // }
-
 import * as THREE from 'https://cdn.skypack.dev/three@0.132.2';
 import { OrbitControls } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/controls/OrbitControls.js';
 // import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls'
@@ -113,19 +112,21 @@ const scene = new THREE.Scene();
 let renderer;
 let camera;
 let model;
+let controls;
 init(); //our setup
 render(); //the update loop
+var axis;
 
 function init() {
   //setup the camera
   camera = new THREE.PerspectiveCamera(
     45,
-    window.innerWidth / window.innerHeight,
+    window.innerWidth / window.innerHeight ,
     10,
     10000
   );
-  camera.position.set(108, 200, -307);
-
+  camera.position.set(400, 400, 400);
+  axis = new THREE.AxesHelper( 10000 );
   //load and create the environment
   new RGBELoader()
     .setDataType(THREE.UnsignedByteType)
@@ -138,7 +139,6 @@ function init() {
 
         // scene.background = envMap; //this loads the envMap for the background
         scene.environment = envMap; //this loads the envMap for reflections and lighting
-
         texture.dispose(); //we have envMap so we can erase the texture
         pmremGenerator.dispose(); //we processed the image into envMap so we can stop this
       }
@@ -151,10 +151,44 @@ function init() {
     function (gltf) {
       model = gltf.scene;
       if (model) model.rotation.x -= Math.PI/2;
+      // model.position.y -= 200;
+      // model.position.setX(2000);
+      // model.position.setY(-20);
       scene.add(model);
+      
       render(); //render the scene for the first time
     }
   );
+
+  // var loader2 = new THREE.FontLoader();
+  // loader2.load( '/static/fonts/helvetiker_regular.typeface.json', function ( font ) {
+
+  //   var textGeometry = new THREE.TextGeometry( "text", {
+
+  //     font: font,
+
+  //     size: 50,
+  //     height: 10,
+  //     curveSegments: 12,
+
+  //     bevelThickness: 1,
+  //     bevelSize: 1,
+  //     bevelEnabled: true
+
+  //   });
+  //   var  color = new THREE.Color();
+  //   color.setRGB(255, 250, 250);
+  //   var textMaterial = new THREE.MeshPhongMaterial( 
+  //     { color: color}
+  //   );
+  //   var light = new THREE.DirectionalLight( 0xffffff );
+  //   light.position.set( 0, 1, 1 ).normalize();
+  //   scene.add(light);
+  //   var mesh = new THREE.Mesh( textGeometry, textMaterial );
+
+  //   scene.add( mesh );
+
+  // }); 
 
   //setup the renderer
   renderer = new THREE.WebGLRenderer({ antialias: true, canvas: canvas });
@@ -164,14 +198,18 @@ function init() {
   renderer.toneMappingExposure = 1;
   renderer.outputEncoding = THREE.sRGBEncoding; //extended color space for the hdr
 
-  const controls = new OrbitControls(camera, renderer.domElement);
+  controls = new OrbitControls(camera, renderer.domElement);
   controls.addEventListener("change", render); // use if there is no animation loop to render after any changes
   controls.minDistance = 2000;
-  controls.maxDistance = 3000;
-  controls.target.set(0, 200, -0.2);
+  controls.maxDistance = 8000;
+  controls.target.set(0, 200, 0);
   controls.update();
 
+  // let gridHelper = new THREE.GridHelper(4000, 4000);
+  // scene.add(gridHelper);
+  scene.add( axis );
   window.addEventListener("resize", onWindowResize);
+  // animate();
 }
 
 function onWindowResize() {
@@ -186,6 +224,34 @@ function onWindowResize() {
 //
 
 function render() {
+  // var  textGeo = new THREE.TextGeometry('Y', {
+  //     size: 5,
+  //     height: 2,
+  //     curveSegments: 6,
+  //     font: "helvetiker",
+  //     style: "normal"       
+  // });
+
+  // var  color = new THREE.Color();
+  // color.setRGB(255, 250, 250);
+  // var  textMaterial = new THREE.MeshBasicMaterial({ color: color });
+  // var  text = new THREE.Mesh(textGeo , textMaterial);
+  // text.position.x = axis.geometry.vertices[1].x;
+  // text.position.y = axis.geometry.vertices[1].y;
+  // text.position.z = axis.geometry.vertices[1].z;
+  // text.rotation = camera.rotation;
+  // scene.add(text);
   renderer.render(scene, camera);
+}
+
+
+function animate() {
+  // if(model) model.position.y += 10;
+  // if(camera) camera.position.y += 10;
+  // if(controls) controls.target.y += 10;
+  // controls.update();
+  if (model) model.rotation.x -= 0.01;
+  renderer.render(scene, camera);
+  requestAnimationFrame(animate);
 }
 
