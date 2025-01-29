@@ -39,6 +39,18 @@ def test():
             #     time.sleep(.1)
             # temp = 60
             while True:
+                if(lineNumber % 935 == 0):
+                    offset = imufusion.Offset(100)
+                    ahrs = imufusion.Ahrs()
+                    ahrs.settings = imufusion.Settings(
+                        imufusion.CONVENTION_NWU,  # convention
+                        0.5,  # gain
+                        2000,  # gyroscope range
+                        10,  # acceleration rejection
+                        10,  # magnetic rejection
+                        500,  # recovery trigger period = 5 seconds
+                    )
+                
                 if(serial_used):
                     if ser.in_waiting > 0:
                         # print(ser.readline().decode('utf-8'))
@@ -81,7 +93,7 @@ def test():
                         # lineAsString += "0,0,0,0,0,0,0,0"
                         print(f"{lineAsString}")
                         yield "data: %s\n\n" % lineAsString
-                    time.sleep(0.02)
+                    time.sleep(0.05)
         return Response(events(), content_type='text/event-stream')
     return render_template('rocket3D.html')
 

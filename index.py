@@ -68,7 +68,7 @@ def test():
                         lineAsString += "0,0,0,0,0,0,0,0"
                         print(f"{lineAsString}")
                         yield "data: %s\n\n" % lineAsString
-                    time.sleep(0.1)
+                    time.sleep(0.05)
         return Response(events(), content_type='text/event-stream')
     return render_template('index.html')
 

@@ -298,7 +298,7 @@ function animate() {
   // if(camera) camera.position.y += 10;
   // if(controls) controls.target.y += 10;
   // controls.update();
-  if (model && eulerAngle) model.rotation.set((-0.5*Math.PI)+(eulerAngle[0] *Math.PI/180),0.0465+(eulerAngle[1]*Math.PI/180),(eulerAngle[2]*Math.PI/180));
+  if (model && eulerAngle) model.rotation.set((-0.5*Math.PI)+(eulerAngle[0] *Math.PI/360),0.0465+(eulerAngle[1]*Math.PI/360),(eulerAngle[2]*Math.PI/360));
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }
