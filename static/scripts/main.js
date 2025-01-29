@@ -105,7 +105,20 @@ import { RGBELoader } from 'https://cdn.skypack.dev/three@0.132.2/examples/jsm/l
 // import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 // import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
 // import { RGBELoader } from "three/examples/jsm/loaders/RGBELoader.js";
+var eulerAngle;
+if (!!window.EventSource) {
+  var source = new EventSource('/');
+// var ctx = c.getContext("2d");
+  // ctx.translate(c.width/2, c.height - 1/10*c.height);
 
+  source.onmessage = function(e){
+      eulerAngle = e.data.toString().substring(1,e.data.toString().length-1).trim().split(/\s+/);
+      for(var i = 0; i < eulerAngle.length; i++){
+        eulerAngle[i] = Number(eulerAngle[i].trim());
+      }
+  };
+  
+}
 // Canvas
 const canvas = document.querySelector("canvas");
 const scene = new THREE.Scene();
@@ -122,10 +135,10 @@ function init() {
   camera = new THREE.PerspectiveCamera(
     45,
     window.innerWidth / window.innerHeight ,
-    10,
-    10000
+    1,
+    1000
   );
-  camera.position.set(400, 400, 400);
+  camera.position.set(10, 10, 10);
   axis = new THREE.AxesHelper( 10000 );
   //load and create the environment
   new RGBELoader()
@@ -144,17 +157,52 @@ function init() {
       }
     );
 
+  model = new THREE.Object3D( );
   // load the model
   const loader = new GLTFLoader();
   loader.load(
-    "/static/models/rocket/scene.gltf",
+    "/static/models/DarwinRender.glb",
     function (gltf) {
-      model = gltf.scene;
-      if (model) model.rotation.x -= Math.PI/2;
+      // model = gltf.scene;
+      // if (model) model.rotation.x -= Math.PI/2;
+      const box = new THREE.Box3( ).setFromObject( gltf.scene );
+					// https://threejs.org/docs/index.html#api/en/helpers/Box3Helper
+	// const boxHelper = new THREE.Box3Helper( box, 0xffff00 );
+	// scene.add( boxHelper ); // see original position of model.gltf, not centered
+      const c = box.getCenter( new THREE.Vector3( ) );
+      const size = box.getSize( new THREE.Vector3( ) );
+      // center the gltf scene - important for modelSqu.rotation.y = t in function animate
+      gltf.scene.position.set( 0.0465-c.x, - c.y, -c.z );  // put // in front of this line, try it out 
+      var vector = new THREE.Vector3(0, 1, 0);
+      var euler = new THREE.Euler();
+      const quaternion = new THREE.Quaternion();
+      let v = new THREE.Vector3();
+      let meshes = []
+      model.rotation.set((-0.5*Math.PI),0.0465,0);
+      // model.traverse(e=>meshes.push(e));
+      // meshes.forEach(mesh=>{
+      //   console.log(mesh);
+      //   var worldRot = new THREE.Euler();
+      //   mesh.getWorldRotation().copy(worldRot);
+      //   worldRot.reorder("ZYX");
+      //   let g = mesh.geometry;
+      //   if(g !== undefined){
+      //   console.log(g);
+      //   let points = g.attributes.position;
+      //   for(let i=0;i<points.count;i++){
+      //     v.set(points.getX(i),points.getY(i),points.getZ(i));
+      //     mesh.localToWorld(v);
+      //     console.log("world space vertex:",v)
+      //   }
+      // }
+      // })
+      model.add( gltf.scene ); 
+      model.position.set( 0, 0, 0);
       // model.position.y -= 200;
       // model.position.setX(2000);
       // model.position.setY(-20);
       scene.add(model);
+      // console.log(model.position);
       
       render(); //render the scene for the first time
     }
@@ -200,16 +248,16 @@ function init() {
 
   controls = new OrbitControls(camera, renderer.domElement);
   controls.addEventListener("change", render); // use if there is no animation loop to render after any changes
-  controls.minDistance = 2000;
-  controls.maxDistance = 8000;
-  controls.target.set(0, 200, 0);
+  controls.minDistance = 10;
+  controls.maxDistance = 100;
+  controls.target.set(0, 0, 0);
   controls.update();
 
   // let gridHelper = new THREE.GridHelper(4000, 4000);
   // scene.add(gridHelper);
   scene.add( axis );
   window.addEventListener("resize", onWindowResize);
-  // animate();
+  animate();
 }
 
 function onWindowResize() {
@@ -250,7 +298,7 @@ function animate() {
   // if(camera) camera.position.y += 10;
   // if(controls) controls.target.y += 10;
   // controls.update();
-  if (model) model.rotation.x -= 0.01;
+  if (model && eulerAngle) model.rotation.set((-0.5*Math.PI)+(eulerAngle[0] *Math.PI/180),0.0465+(eulerAngle[1]*Math.PI/180),(eulerAngle[2]*Math.PI/180));
   renderer.render(scene, camera);
   requestAnimationFrame(animate);
 }

@@ -1,87 +1,1843 @@
 <!DOCTYPE html>
 
-<head>
-    <title>Telemetry</title>
-    <link rel="stylesheet" type="text/css" href={{ url_for('static',filename='styles/index.css') }}>
-</head>
-<body>
-    <script src="http://code.jquery.com/jquery-latest.js"></script>
-    <div id="sideBar">
-        <button id="addPlus" class="add_plus" onclick="animateButton(this)">
-            <div id="plus" class="plus">
-            <span>&plus;</span>
+<html>
+    <head>
+        <title>Telemetry</title>
+        <link rel="icon" type="image/x-icon" href={{url_for('static',filename='logos/ed_logo_white_square.ico')}}>
+        <link rel="stylesheet" href={{url_for('static',filename='styles/index.css')}}></style>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+        integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+        crossorigin=""/>
+        <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+        crossorigin=""></script>
+    </head>
+    <body>
+        <div id="loader" class="loadingScreen">
+            <img src="/static/logos/ed_logo_white_square.png" style="height: 100px;width: 100px;position: absolute;">
+            <img id="loadingRocket" src="/static/logos/rocketRotateSmoke.png" style="position: absolute;height: 250px;width: 250px;animation: rotation 2s infinite ease-in-out;">
+        </div>
+        <script src="http://code.jquery.com/jquery-latest.js"></script>
+        <div id="topBar">
+            <div style="display: flex;flex-direction: row;width: max(15%,fit-content);justify-content: center;justify-self: left;">
+                <img src="/static/logos/ed_logo_white.png" style="position: relative;height: 35px;position: relative;left: 5px;margin-right: 20px;align-self: center;">
+                <button id="addResize1" class="add_plus add_button" style="font-size: 20px;font-family: SpaceMono;"
+                    onmouseenter="suggest('Adds a tile to display raw data')" onmouseleave="clearSuggestion()">
+                    0
+                </button>
+                <button id="addResize2" class="add_plus add_button" onmouseenter="flipColour(this)" onmouseleave="flipColour(this)">
+                    <div style="height: 100%;">
+                        <img src="/static/logos/meter.png" height="60%" style="top:20%;position: relative;">
+                    </div>
+                </button>
+                <button id="addResize3" class="add_plus add_button" onmouseenter="flipColour(this)" onmouseleave="flipColour(this)">
+                    <div style="height: 100%;">
+                        <img src="/static/logos/graph.png" height="60%" style="top:20%;position: relative;">
+                    </div>
+                </button>
+                <button id="addResize4" class="add_plus add_button" onmouseenter="flipColour(this)" onmouseleave="flipColour(this)">
+                    <div style="height: 100%;">
+                        <img src="/static/logos/double_graph.png" height="60%" style="top:20%;position: relative;">
+                    </div>
+                </button>
             </div>
-        </button><br>
-        <button id="addResizable" class="add_div add_text hide option_invalid">
-            Add Text
-        </button><br>
-        <button id="addMeter" class="add_div add_meter hide option_invalid">
-            Add Meter
-        </button>
-    </div>
-    <div id = "resizableContainer">
-        <div id = "resizable1" class="resizable">
-            <div id="data1" class="data">
+            <div id="helper"></div>
+            <span id="clock" style="display: grid-row;position: relative;font-size: 30px;color: white;font-family: SpaceMono;justify-self: right;align-self: center;right:15px;width:max(15%,fit-content);text-align: right;margin-left: 20px;"></span>
+        </div>
+        <!-- <div id="sideBar">
+            <button id="addPlus" class="add_plus" onclick="animateButton(this)">
+                <div id="plus" class="plus">
+                <span>&plus;</span>
+                </div>
+            </button>
+            
+        </div> -->
+        <div id="app">
+            <div id="block0" class="resizable-x">
+                <div id="block1" class="resizable-y" style="flex: 33.33%;position:relative;">
+                    <div id="block2" class="resizable" style="flex: 33.33%;position:relative;">
+                        <div id="data1" class="data">
+                            <div style="display: flex;flex-direction: row;justify-content: space-between;">
+                            </div>
+                        </div>
+                    </div>
+                    <div id="y0" class="resizer-y"></div>
+                    <div id="block3" class="resizable-y" style="flex: 66.66%;position:relative;">
+                        <div id="block4" class="resizable" style="flex: 33.33%;position:relative;">
+                            <canvas id="meter1" class="meter" style="width: 100%; height: 100%;">
+                            </canvas>
+                        </div>
+                        <div id="y1" class="resizer-y"></div>
+                        <div id="block5" class="resizable" style="flex: 33.33%;position:relative;">
+                            <canvas id="graph1" class="graph" style="width: 100%;">
+                            </canvas>
+                        </div>
+                    </div>
+                </div>
+                <div id="x0" class="resizer-x"></div>
+                <div id="block6" class="resizable-x" style="flex: 66.66%;position:relative;">
+                    <div id="block7" class="resizable-y" style="flex: 50%;position:relative;">
+                        <div id="block8" class="resizable" style="flex: 33.33%;position:relative;">
+                            <div id="data2" class="data">
+                            </div>
+                        </div>
+                        <div id="y2" class="resizer-y"></div>
+                        <div id="block9" class="resizable-y" style="flex: 66.66%;position:relative;">
+                            <div id="block10" class="resizable" style="flex: 33.33%;position:relative;">
+                                <canvas id="meter2" class="meter" style="width: 100%; height: 100%;">
+                                </canvas>
+                            </div>
+                            <div id="y3" class="resizer-y"></div>
+                            <div id="block11" class="resizable" style="flex: 33.33%;position:relative;">
+                                <canvas id="graph2" class="graph" style="width: 100%;">
+                                </canvas>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="x1" class="resizer-x"></div>
 
+                    <div id="block12" class="resizable-y" style="flex: 50%;position: relative;">
+                        <div id="block13" class="resizable" style="flex: 50%;position:relative;">
+                            <div id="map" style="position: relative;width: 100%;height: 100%;">
+                            </div>
+                        </div>
+                        <div id="y4" class="resizer-y"></div>
+                        <div id="block14" class="resizable" style="flex: 50%;position:relative;">
+                            <iframe  src="http://127:0:0:1:7000" height="100%" width="100%" style="border: none;"></iframe>
+                        </div>
+
+                        <!-- <iframe  src="http://127:0:0:1:7000" height="100%" width="100%" style="border: none;"></iframe> -->
+                        <!-- <div id="block13" class="resizable" style="flex: 33.33%;position:relative;">
+                            <div id="data3" class="data">
+                            </div>
+                        </div>
+                        <div id="y4" class="resizer-y"></div>
+                        <div id="block14" class="resizable-y" style="flex: 66.66%;position:relative;">
+                            <div id="block15" class="resizable" style="flex: 33.33%;position:relative;">
+                                
+                            </div>
+                            <div id="y5" class="resizer-y"></div>
+                            <div id="block16" class="resizable" style="flex: 33.33%;position:relative;">
+                                <canvas id="graph8" class="graph" style="width: 100%;">
+                                </canvas>
+                            </div>
+                        </div> -->
+                    </div>
+                </div>
             </div>
-        </div>
-        <div id = "resizable2" class="resizable">
-            <div id="data2" class="data">
-            </div>
-        </div>
-        <div id = "resizable3" class="resizable meter">
-            <canvas id="meter3" style="width: 80%;top:10%;left:10%">
-            </canvas>
-        </div>
-        <div id = "resizable4" class="resizable graph">
-            <canvas id="graph4" style="width: 80%;top:10%;left:10%">
-            </canvas>
-        </div>
+        
         <script>
-            function sidebarWidth(){
-                var sidebar_width=$('#sideBar').width();
-                $('#resizableContainer').css('margin-left',sidebar_width+20);
-            }
-            $(window).resize(function(){
-                sidebarWidth();
-            })
+            var blocks = 14;
+            var xResizers = 2;
+            var yResizers = 5;
+            var datablocks = 3;
+            var meterblocks = 2;
+            var graphblocks = 2;
 
-            var onMsg = function(e) {
-                thisNum = e.data;
-                if(thisNum === 'None'){
-                    thisNum = lastNum;
+            var inUse, inUseByElem = null;
+            var orientation = null;
+            var elemBeingAdded = false;
+            var elemToAdd;
+            var overlayActive = false;
+            var menuHeight = null;
+            var menuWidth = null;
+            const menuButtons = `<div class="menu" onclick="showMenu(this)">
+                                    <button class="menuButton leaflet-top leaflet-right" style="pointer-events:auto;">
+                                        <span style="box-shadow: 0px 0px 10px 0.1px black;font-size:4px;">&#9711;</span><br>
+                                        <span style="box-shadow: 0px 0px 10px 0.1px black;font-size:4px;">&#9711;</span><br>
+                                        <span style="box-shadow: 0px 0px 10px 0.1px black;font-size:4px;">&#9711;</span>
+                                    </button>   
+                                </div>
+                                <div id="menu-dropdown" class="menu-dropdown">
+                                    <ul style="position:relative;list-style-type: none;padding-left: 0;font-size: 15px;line-height: 25px;">
+                                        <li><a onclick="remove(this)" style="cursor: pointer;">Remove</a></li>
+                                    </ul>
+                                    <span style="position:absolute;top:20px;right:20px;cursor:pointer;" onclick="hideMenu(this.parentNode)">&#10060;</span>
+                                </div>`;
+            (function ($) {
+
+            var item,
+                originalLocation,
+                overMiddle = false,
+                beingDragged = false;
+
+            $.fn.dlResizeable = function( options ) {
+                item = this;
+                var initPageX = null;
+                var initPageY = null;
+                var pointerProperty = null;
+                $(document).mousedown(function (e) {
+                    if(overMiddle && !inUse && inUseByElem === null && !overlayActive && document.getElementById(e.target.id) != null){
+                        document.getElementById(e.target.id).style.pointerEvents = 'none';
+                        pointerProperty = e.target.id;
+                        // console.log(e.target.id);
+                        document.querySelectorAll(".resizable").forEach((x)=>{
+                            x.removeEventListener('mouseover',addResizable);
+                            x.addEventListener('mouseenter',checkRectanglesMove,true);
+                        });
+                        if(document.querySelectorAll('iframe') != null){
+                            document.querySelectorAll('iframe').forEach((x)=>{ 
+                                x.style.pointerEvents = 'none'
+                            });
+                        }
+                        if(document.querySelectorAll('#map') != null){
+                            document.querySelectorAll('#map').forEach((x)=>{ 
+                                x.style.pointerEvents = 'none'
+                            });
+                        }
+                        originalLocation = item.offset();
+                        document.querySelector(item.selector).style.zIndex = '200';   
+                        document.querySelector(item.selector).style.opacity = '0.7';     
+                        inUse = true;
+                        inUseByElem = this;
+                        beingDragged = overMiddle;
+                        item.css("cursor", "move");
+                        suggest("Drag over tile to move to");
+                    }
+                });
+
+                $(document).mouseup( function (e) {
+                    if(inUse && inUseByElem === this){
+                        if(pointerProperty!==null){
+                            document.getElementById(pointerProperty).style.pointerEvents = 'auto';
+                        }
+                        document.querySelectorAll(".resizable").forEach((x)=>{
+                            x.addEventListener('mouseover',addResizable);
+                            x.removeEventListener('mouseenter',checkRectanglesMove,true);
+                        });
+                        if(e.target.id.endsWith('canvas') && !elemBeingAdded){
+                            relocate(e.target.id,item);
+                        }
+                        else{
+                            item.offset({top:originalLocation.top,left:originalLocation.left});
+
+                        // document.querySelector(item.selector).style.position = 'relative';
+                            document.querySelector(item.selector).style.zIndex = '0';  
+                            document.querySelector(item.selector).style.opacity = '1';
+
+                            if(document.querySelectorAll('iframe') != null){
+                                document.querySelectorAll('iframe').forEach((x)=>{ 
+                                    x.style.pointerEvents = 'auto'
+                                    x.addEventListener("mouseenter",()=>{
+                                    suggest("Open menu to move tile");
+                                    });
+                                    x.addEventListener("mouseleave",clearSuggestion);
+                                });
+                            }
+                        }       
+                        if(document.querySelectorAll('#map') != null){
+                            document.querySelectorAll('#map').forEach((x)=>{ 
+                                x.parentNode.removeEventListener('mouseover',addResizable);
+                                x.parentNode.style.pointerEvents = 'auto';
+                                x.style.pointerEvents = 'auto';
+                                x.addEventListener("mouseenter",()=>{
+                                    suggest("Open menu to move tile");
+                                });
+                                x.addEventListener("mouseleave",clearSuggestion);
+                                //reloadMap();
+                            });
+                        }
+                        inUse = false;
+                        inUseByElem = null;
+                        beingDragged = false;
+                        item.css("cursor", "default");
+                        clearSuggestion();
+                    }
+                });
+
+                $(document).mousemove( function (e) {
+                    if(inUseByElem === this || inUseByElem === null){
+                        var parentOffset = item.offset();
+                        if(parentOffset === undefined){
+                            var relX = e.pageX;
+                            var relY = e.pageY;
+                        }
+                        else{
+                            var relX = e.pageX - parentOffset.left;
+                            var relY = e.pageY - parentOffset.top;
+                        }
+                        var middle = relX < item.outerWidth() - 20 && relX > 20 && relY < item.outerHeight() - 20 && relY > 20;
+                        overMiddle = middle;
+                        if(!beingDragged){
+                            if(overMiddle){
+                                item.css("cursor", "move");
+                            }
+                            else {
+                                item.css("cursor", "default");
+                            }
+                            // suggest("Click and drag to relocate");
+                        }
+                        if(beingDragged){
+                            if(initPageX == null){
+                                initPageX = relX;
+                            }
+                            if(initPageY == null){
+                                initPageY = relY;
+                            }
+                            newWidth = relX;
+                            if(newWidth + item.offset().left > 0){
+                                item.offset({top:item.offset().top, left:item.offset().left + newWidth - initPageX})
+                            }
+                            newHeight = relY;
+                            if(newHeight + item.offset().top > 0){
+                                item.offset({top:item.offset().top + newHeight - initPageY, left:item.offset().left})
+                            }
+                        }
+                    }
+                });
+
+                return this;
+            }
+
+            }(jQuery));
+
+            function flipColour(elem){
+                var grandChild = elem.children[0].children[0];
+                if(grandChild.src.endsWith("_black.png")){
+                    clearSuggestion();
+                    grandChild.src = grandChild.src.replace("_black.png",".png");
                 }
-                if(thisNum > maxNum){
-                    maxNum = parseInt(thisNum);
+                else if(grandChild.src.endsWith(".png")){
+                    if(grandChild.src.endsWith("meter.png")){
+                        suggest("Adds a tile with a meter");
+                    }
+                    else if(grandChild.src.endsWith("double_graph.png")){
+                        suggest("Adds a tile with a graph on the positive x axis");
+                    }
+                    else if(grandChild.src.endsWith("graph.png")){
+                        suggest("Adds a tile with a graph on the positive x and y axes");
+                    }
+                    
+                    grandChild.src = grandChild.src.replace(".png","_black.png");
+                }   
+            }
+
+            function suggest(help){
+                document.getElementById("helper").innerHTML = help.toString();
+                document.getElementById("helper").style.color = 'white';
+            }
+            function suggestError(help){
+                document.getElementById("helper").innerHTML = help.toString();
+                document.getElementById("helper").style.color = 'red';
+            }
+
+            function clearSuggestion(){
+                document.getElementById("helper").innerHTML = '';
+            }
+            // (function ($) {
+
+            // $.fn.addMenuOptions = function( options ) {
+            //     item = this;
+            //     item.innerHTML += 
+                 
+            //     return this;
+            // }
+
+            // }(jQuery));
+            const packetVals = [
+                    "Packet Number",
+                    "Time Since Arming",
+                    "GyroX",
+                    "GyroY",
+                    "GyroZ",
+                    "AccX",
+                    "AccY",
+                    "AccZ",
+                    "MagX",
+                    "MagY",
+                    "MagZ",
+                    "QuatX",
+                    "QuatY",
+                    "QuatZ",
+                    "QuatW",
+                    "IMU Temperature",
+                    "Barometer Pressure",
+                    "Barometer Altitude",
+                    "Barometer Temperature",
+                    "Barometer Velocity",
+                    "GPS Latitude",
+                    "GPS Longitude",
+                    "GPS Altitude",
+                    "GPS Velocity",
+                    "GPS Satellites",
+                    "GPS Heaiding",
+                    "Battery Voltage",
+                    "Flight State",
+                    "SD Log State",
+                    "Flash Log State"
+                ]
+
+            window.onload = (function () {
+                "use strict";
+                // if(document.getElementById('map') != null){
+                //     document.getElementById('map').style.height = $("#" + document.getElementById('map').parentNode.id).innerHeight() + 'px';
+                // }
+                if(document.querySelectorAll('.resizable-x') != null){
+                    xResizers = document.querySelectorAll('.resizable-x').length;
                 }
-                lastNum = e.data;
-                $("#data1").text(thisNum);
-                $("#data2").text(thisNum);
+                if(document.querySelectorAll('.resizable-y') != null){
+                    yResizers = document.querySelectorAll('.resizable-y').length;
+                }
+                if(document.querySelectorAll('.resizable') != null){
+                    blocks = document.querySelectorAll('.resizable').length +xResizers + yResizers - 1;
+                }
+                if(document.querySelectorAll('.data') != null){
+                    datablocks = document.querySelectorAll('.data').length;
+                }
+                if(document.querySelectorAll('.meter') != null){
+                    meterblocks = document.querySelectorAll('.meter').length;
+                }
+                if(document.querySelectorAll('.graph') != null){
+                    graphblocks = document.querySelectorAll('.graph').length;
+                }
+                var str = resizer.toString().replace(/\s/g,'');
+                // if(resizerToRemove.includes('x')){
+                //     str = str.replace("resizableX(\"#"+resizerToRemove+"\");","resizableY(\"#"+resizerToRemove+"\");");  
+                // }
+                var strlen = str.length;
+                var start = str.indexOf('{');
+                str = str.substring(start+1,strlen-1);
+                for(var i = 0; i < xResizers; i ++){
+                    str = str + "resizableX(\"#x"+ i +"\");";
+                }
+                for(var j = 0; j < yResizers; j++){
+                    str = str + "resizableY(\"#y"+ j +"\");";
+                }
+                resizer = new Function(str); 
+                resizer();
+
+                document.querySelectorAll(".add_button").forEach((x) => {
+                    x.addEventListener('click', addMeter);
+                });
+
+                var reload = false;
+                window.addEventListener("resize",resizer);
+                document.querySelectorAll(".resizable").forEach((x)=>{
+                    x.addEventListener('mouseover',addResizable);
+                    x.innerHTML+=menuButtons;
+                });
+
+                document.querySelectorAll('.data').forEach((x)=>{
+                    addCustomLineButton('#' + x.id);
+                })
+
+                document.querySelectorAll('.meter').forEach((x)=>{
+                    addCustomLineButton('#' + x.id);
+                })
+
+                document.querySelectorAll('.graph').forEach((x)=>{
+                    addCustomLineButton('#' + x.id);
+                })
+
+                addCustomMoveButton('#map');
+                addCustomMoveButton('iframe');
+
+                document.querySelector('iframe').src = window.location.href.substring(0,window.location.href.length-5) + '8001/'; 
+                document.querySelectorAll("#map").forEach((x)=>{
+                    x.parentNode.removeEventListener('mouseover',addResizable);
+                });
+            })();
+
+            function addCustomLineButton(elem){
+                var moveItem = document.querySelector(elem);
+                var elemParent = moveItem.parentNode;
+                var moveElem = document.createElement('li');
+                var moveLink = document.createElement('a');
+                moveLink.setAttribute("onclick","viewOptions(this, document.querySelector('"+elem+"'))");
+                moveLink.style.cursor = 'pointer';
+                moveLink.innerHTML = 'Modify Graph';
+                moveElem.appendChild(moveLink);
+                moveItem.parentNode.children[2].children[0].appendChild(moveElem);
+            }
+
+            function addCustomMoveButton(elem){
+                var moveItem = document.querySelector(elem);
+                moveItem.addEventListener("mouseenter", ()=>{
+                    suggest("Open menu to move tile")
+                })
+                moveItem.addEventListener("mouseleave",clearSuggestion)
+                var elemParent = moveItem.parentNode;
+                var moveElem = document.createElement('li');
+                var moveLink = document.createElement('a');
+                moveLink.setAttribute("onclick","Move(document.querySelector('"+elem+"'))");
+                moveLink.style.cursor = 'pointer';
+                moveLink.innerHTML = 'Move';
+                moveElem.appendChild(moveLink);
+                moveItem.parentNode.children[2].children[0].appendChild(moveElem);
+            }
+
+            var dataPoints = 0;
+            var dataLabels = [];
+        
+            function viewOptions(menu, elem){
+                dataPoints = 0;
+                dataLabels = [];
+                var selectedBefore;
+                var selectedNow;
+                var menuList = menu.parentNode.parentNode;
+                menu = menuList.parentNode;
+                var stored = menu.innerHTML;
+                elem = elem.id;
+                document.getElementById("overlay").removeEventListener('click',hideMenu,false);
+                document.getElementById("overlay").addEventListener('click',()=>{
+                    closeMenu(menu,stored);
+                });
+                if(elem.includes("graph")){
+                    suggest("Choose between 1 and 4 values to plot");
+                    var str = graphUpdate.toString();
+                    var checkedCount = [];
+                    if(str.includes(elem)){
+                        var dataIndex = str.indexOf(elem);
+                        var startIndex = str.lastIndexOf(";",dataIndex) + 1;
+                        var endIndex = str.indexOf(";",dataIndex) + 1;
+                        var substringToModify = str.substring(startIndex, endIndex);
+                        menu.innerHTML = "Choose Data Values<br>"
+                        var closeButton = document.createElement("span");
+                        closeButton.style = "position:absolute;top:20px;right:20px;cursor:pointer;font-size:16px;";
+                        console.log(menu);
+                        closeButton.addEventListener('click',()=>{
+                            closeMenu(menu,stored);
+                        });
+                        closeButton.innerHTML = '&#10060;';
+                        menu.appendChild(closeButton);
+                        var backButton = document.createElement("span");
+                        backButton.style = "position:absolute;top:45px;right:21px;cursor:pointer;font-size:20px;";
+                        backButton.addEventListener('click',()=>{
+                            goBack(menu,stored);
+                        });
+                        backButton.innerHTML = '&#129128;';
+                        menu.appendChild(backButton);
+                        var nextButton = document.createElement("span");
+                        nextButton.style = "position:absolute;top:70px;right:20px;cursor:pointer;font-size:20px;";
+                        nextButton.addEventListener('click',()=>{
+                            if(!(dataPoints === 0 || dataPoints > 4)){
+                                changeGraph(elem);
+                                closeMenu(menu, stored);
+                            }
+                            else{
+                                if(dataPoints === 0){
+                                    suggestError("Choose at least one value");
+                                }
+                                else{
+                                    suggestError("Too many values chosen");
+                                }
+                            }
+                        });
+                        nextButton.innerHTML = '&#10004;';
+                        nextButton.style.color = "rgb(0,128,128)";
+                        menu.appendChild(nextButton);
+                        menuList.innerHTML = '';
+                        for(var i = 0; i < packetVals.length; i++){
+                            if(substringToModify.includes(packetVals[i])){
+                                menuList.innerHTML += '<label class="graphCheckBox"><input type="checkbox" onclick="modifyDataPoints(\''+packetVals[i]+'\')" checked>&ensp;'+packetVals[i]+'</input></label><br>';
+                                dataPoints++;
+                                dataLabels.push(packetVals[i]);
+                            }
+                            else{
+                                menuList.innerHTML += '<label class="graphCheckBox"><input type="checkbox" onclick="modifyDataPoints(\''+packetVals[i]+'\')">&ensp;'+packetVals[i]+'</input></label><br>';
+                            }
+                        }
+                        menu.appendChild(menuList);
+                        // menu.innerHTML += '<span style="position:absolute;margin-top:20px;margin-right:20px;cursor:pointer;justify-self:right;" onclick="closeMenu('+menu+','+stored+')"></span><br>';
+                        // menu.innerHTML += '<span style="position:absolute;margin-top:20px;margin-right:20px;cursor:pointer;justify-self:right;color:white;" onclick="goBack('+menu+','+stored+')">&#129128;</span>';
+                    }
+                }
+                else if(elem.includes("meter")){
+                    suggest("Choose a value to plot");
+                    var str = meterUpdate.toString();
+                    if(str.includes(elem)){
+                        var dataIndex = str.indexOf(elem);
+                        var startIndex = str.lastIndexOf(";",dataIndex) + 1;
+                        var endIndex = str.indexOf(";",dataIndex) + 1;
+                        var substringToModify = str.substring(startIndex, endIndex);
+                        menu.innerHTML = "Choose Data Value<br>"
+                        var closeButton = document.createElement("span");
+                        closeButton.style = "position:absolute;top:20px;right:20px;cursor:pointer;font-size:16px;";
+                        closeButton.addEventListener('click',()=>{
+                            closeMenu(menu,stored);
+                        });
+                        closeButton.innerHTML = '&#10060;';
+                        menu.appendChild(closeButton);
+                        var backButton = document.createElement("span");
+                        backButton.style = "position:absolute;top:45px;right:21px;cursor:pointer;font-size:20px;";
+                        backButton.addEventListener('click',()=>{
+                            goBack(menu,stored);
+                        });
+                        backButton.innerHTML = '&#129128;';
+                        menu.appendChild(backButton);
+                        var nextButton = document.createElement("span");
+                        nextButton.style = "position:absolute;top:70px;right:20px;cursor:pointer;font-size:20px;";
+                        nextButton.addEventListener('click',()=>{
+                            if(dataLabels.length === 0){
+                                suggestError("No value selected");
+                            }
+                            else{
+                                var negativeValuesInDataLabels = false;
+                                for(var k = 0; k < StoredData.length;k++){
+                                    if(StoredData[k].get(dataLabels[0]) < 0){
+                                        negativeValuesInDataLabels = true;
+                                        // console.log("here");
+                                        break;
+                                    }
+                                }
+                                if(!negativeValuesInDataLabels){
+                                    changeMeter(elem);
+                                    closeMenu(menu, stored);
+                                }
+                                else{
+                                    suggestError("Data has negative values");
+                                }
+                            }
+                        });
+                        nextButton.innerHTML = '&#10004;';
+                        nextButton.style.color = "rgb(0,128,128)";
+                        menu.appendChild(nextButton);
+                        menuList.innerHTML = '';
+                        for(var i = 0; i < packetVals.length; i++){
+                            if(substringToModify.includes(packetVals[i])){
+                                menuList.innerHTML += '<label class="graphCheckBox"><input type="radio" name="meterRadio" onclick="modifyMeterPoints(\''+packetVals[i]+'\')" checked>&ensp;'+packetVals[i]+'</input></label><br>';
+                                dataLabels = [packetVals[i]];
+                                dataPoints = 1;
+                            }
+                            else{
+                                menuList.innerHTML += '<label class="graphCheckBox"><input type="radio" name="meterRadio" onclick="modifyMeterPoints(\''+packetVals[i]+'\')">&ensp;'+packetVals[i]+'</input></label><br>';
+                            }
+                        }
+                        menu.appendChild(menuList);
+                        // menu.innerHTML += '<span style="position:absolute;margin-top:20px;margin-right:20px;cursor:pointer;justify-self:right;" onclick="closeMenu('+menu+','+stored+')"></span><br>';
+                        // menu.innerHTML += '<span style="position:absolute;margin-top:20px;margin-right:20px;cursor:pointer;justify-self:right;color:white;" onclick="goBack('+menu+','+stored+')">&#129128;</span>';
+                    }
+                }
+                else if (elem.includes("data")){
+                    suggest("Choose values to plot");
+                    var str = setupMsg.toString();
+                    if(str.includes(elem)){
+                        var dataIndex = str.indexOf(elem);
+                        var startIndex = str.lastIndexOf(";",dataIndex) + 1;
+                        var endIndex = str.indexOf(";",dataIndex) + 1;
+                        var substringToModify = str.substring(startIndex, endIndex);
+                        menu.innerHTML = "Choose Data Values<br>"
+                        var closeButton = document.createElement("span");
+                        closeButton.style = "position:absolute;top:20px;right:20px;cursor:pointer;font-size:16px;";
+                        console.log(menu);
+                        closeButton.addEventListener('click',()=>{
+                            closeMenu(menu,stored);
+                        });
+                        closeButton.innerHTML = '&#10060;';
+                        menu.appendChild(closeButton);
+                        var backButton = document.createElement("span");
+                        backButton.style = "position:absolute;top:45px;right:21px;cursor:pointer;font-size:20px;";
+                        backButton.addEventListener('click',()=>{
+                            goBack(menu,stored);
+                        });
+                        backButton.innerHTML = '&#129128;';
+                        menu.appendChild(backButton);
+                        var nextButton = document.createElement("span");
+                        nextButton.style = "position:absolute;top:70px;right:20px;cursor:pointer;font-size:20px;";
+                        nextButton.addEventListener('click',()=>{
+                            if(!(dataPoints === 0)){
+                                changeData(elem);
+                                closeMenu(menu, stored);
+                            }
+                            else{
+                                if(dataPoints === 0){
+                                    suggestError("Choose at least one value");
+                                }
+                                else{
+                                    suggestError("Too many values chosen");
+                                }
+                            }
+                        });
+                        nextButton.innerHTML = '&#10004;';
+                        nextButton.style.color = "rgb(0,128,128)";
+                        menu.appendChild(nextButton);
+                        menuList.innerHTML = '';
+                        for(var i = 0; i < packetVals.length; i++){
+                            if(substringToModify.includes(packetVals[i])){
+                                menuList.innerHTML += '<label class="graphCheckBox"><input type="checkbox" onclick="modifyDataPoints(\''+packetVals[i]+'\')" checked>&ensp;'+packetVals[i]+'</input></label><br>';
+                                dataPoints++;
+                                dataLabels.push(packetVals[i]);
+                            }
+                            else{
+                                menuList.innerHTML += '<label class="graphCheckBox"><input type="checkbox" onclick="modifyDataPoints(\''+packetVals[i]+'\')">&ensp;'+packetVals[i]+'</input></label><br>';
+                            }
+                        }
+                        menu.appendChild(menuList);
+                        // menu.innerHTML += '<span style="position:absolute;margin-top:20px;margin-right:20px;cursor:pointer;justify-self:right;" onclick="closeMenu('+menu+','+stored+')"></span><br>';
+                        // menu.innerHTML += '<span style="position:absolute;margin-top:20px;margin-right:20px;cursor:pointer;justify-self:right;color:white;" onclick="goBack('+menu+','+stored+')">&#129128;</span>';
+                    }
+                }
+                // console.log(elem);
+            }
+
+
+            function closeMenu(elem, value){
+                clearSuggestion();
+                elem.innerHTML = value;
+                hideMenu(elem);
+            }
+            function goBack(elem, value){
+                clearSuggestion();
+                document.getElementById("overlay").replaceWith(document.getElementById("overlay").cloneNode(true));
+                document.getElementById("overlay").addEventListener('click',hideMenu,false);
+                elem.innerHTML = value;
+            }
+
+            function modifyMeterPoints(val){
+                dataLabels = [val];
+                dataPoints = 1;
+            }
+
+            function modifyDataPoints(val){
+                if(dataLabels.includes(val)){
+                    dataLabels.splice(dataLabels.indexOf(val),1);
+                    dataPoints--;
+                }
+                else{
+                    dataLabels.push(val);
+                    dataPoints++;
+                }
+            }
+
+            function changeMeter(elem){
+                if(elem.includes("#")){
+                    elem = elem.replace("#",'');
+                }
+                var str = meterUpdate.toString();
+                strlen = str.length;
+                start = str.indexOf('{');
+                str = str.substring(start+1,strlen-1);
+                if(str.includes(elem)){
+                    var dataIndex = str.indexOf(elem);
+                    var startIndex = str.lastIndexOf(";",dataIndex) + 1;
+                    var endIndex = str.indexOf(";",dataIndex) + 1;
+                    var substringToModify = str.substring(startIndex, endIndex);
+                    var newStr = "";
+                    var negativeValuesInDataLabels = false;
+                    outer:for(var j = 0; j < dataLabels.length; j++){
+                        for(var k = 0; k < StoredData.length;k++){
+                            if(StoredData[k].get(dataLabels[j]) < 0){
+                                negativeValuesInDataLabels = true;
+                                break outer;
+                            }
+                        }
+                    }
+                    if(substringToModify.includes("animateMeter")){
+                        var lensVal = substringToModify.substring(substringToModify.indexOf('['),substringToModify.indexOf(']')+1);
+                        newStr += 'animateMeter("'+dataLabels[0]+'","'+elem+ '");';
+                        // console.log(newStr);
+                    }
+                    str = str.replace(substringToModify,newStr);  
+                }
+                meterUpdate = new Function(str);
+                meterUpdate();
+            }
+
+            function changeGraph(elem){
+                if(elem.includes("#")){
+                    elem = elem.replace("#",'');
+                }
+                var str = graphUpdate.toString();
+                strlen = str.length;
+                start = str.indexOf('{');
+                str = str.substring(start+1,strlen-1);
+                if(str.includes(elem)){
+                    var dataIndex = str.indexOf(elem);
+                    var startIndex = str.lastIndexOf(";",dataIndex) + 1;
+                    var endIndex = str.indexOf(";",dataIndex) + 1;
+                    var substringToModify = str.substring(startIndex, endIndex);
+                    var newStr = "";
+                    var negativeValuesInDataLabels = false;
+                    outer:for(var j = 0; j < dataLabels.length; j++){
+                        for(var k = 0; k < StoredData.length;k++){
+                            if(StoredData[k].get(dataLabels[j]) < 0){
+                                negativeValuesInDataLabels = true;
+                                break outer;
+                            }
+                        }
+                    }
+                    if(substringToModify.includes("animateGraph") && !negativeValuesInDataLabels){
+                        var lensVal = substringToModify.substring(substringToModify.indexOf('['),substringToModify.indexOf(']')+1);
+                        newStr += 'animateGraph("'+dataLabels[0]+'","'+elem+'",lens'+lensVal+'++';
+                        for(var i = 1; i < dataLabels.length; i++){
+                            newStr += ',"'+dataLabels[i]+'"';
+                        }
+                        newStr += ');';
+                        // console.log(newStr);
+                    }
+                    else{
+                        var lensVal = substringToModify.substring(substringToModify.indexOf('['),substringToModify.indexOf(']')+1);
+                        newStr += 'animateNegativeGraph("'+dataLabels[0]+'","'+elem+'",lens'+lensVal+'++';
+                        for(var i = 1; i < dataLabels.length; i++){
+                            newStr += ',"'+dataLabels[i]+'"';
+                        }
+                        newStr += ');';
+                    }
+                    str = str.replace(substringToModify,newStr);  
+                }
+                graphUpdate = new Function(str);
+                graphUpdate();
+                // console.log(graphUpdate.toString());
+            }
+
+            function changeData(elem){
+                if(elem.includes("#")){
+                    elem = elem.replace("#",'');
+                }
+                var str = setupMsg.toString();
+                strlen = str.length;
+                start = str.indexOf('{');
+                str = str.substring(start+1,strlen-1);
+                if(str.includes(elem)){
+                    var dataIndex = str.indexOf(elem);
+                    var startIndex = str.lastIndexOf(";",dataIndex) + 1;
+                    var endIndex = str.indexOf(";",dataIndex) + 1;
+                    var substringToModify = str.substring(startIndex, endIndex);
+                    var newStr = "";
+                    var lensVal = substringToModify.substring(substringToModify.indexOf('['),substringToModify.indexOf(']')+1);
+                    newStr += 'onMsg("'+dataLabels[0]+'","'+elem+'"';
+                    for(var i = 1; i < dataLabels.length; i++){
+                        newStr += ',"'+dataLabels[i]+'"';
+                    }
+                    newStr += ');';
+                    str = str.replace(substringToModify,newStr);  
+                }
+                setupMsg = new Function(str);
+                setupMsg();
+                console.log(setupMsg.toString());
+                // console.log(graphUpdate.toString());
+            }
+
+            function addResizable(e){
+                elem = "#" + e.target.id;
+                if(elem !== "#"){
+                    $(elem).dlResizeable();
+                }
+            }
+
+            function animateButton(elem){
+                elem.classList.toggle("showing");
+                document.getElementById("plus").classList.toggle("cross");
+                document.querySelectorAll(".add_button").forEach((x)=>{
+                    if(x.classList.contains("show_button") || x.classList.contains("hide_button")){
+                        x.classList.toggle("hide_button");
+                        if(x.classList.contains("hide_button")){
+                            setTimeout(()=>{
+                                x.style.display = "none";
+                            }, 500);
+                        }
+                        else{
+                            x.style.display = "block";
+                        }
+                    }
+                    x.classList.toggle("show_button");
+
+                })
+                // document.querySelectorAll(".resizable").forEach((x)=>{
+                // })
+            }
+
+            function addMeter(elem){
+                elemBeingAdded = true;
+                document.querySelectorAll(".resizable").forEach((x)=>{
+                    var repl = x.cloneNode(true);
+                    repl.addEventListener('mouseover', checkRectangles);
+                    x.replaceWith(repl);
+                })
+                var elemType;
+                if(elem.target.nodeName.toLowerCase() === 'button'){
+                    elemType = elem.target.id;
+                }
+                else if(elem.target.nodeName.toLowerCase() === 'div'){
+                    elemType = elem.target.parentNode.id;
+                }
+                else{
+                    elemType = elem.target.parentNode.parentNode.id;
+                }
+                switch(elemType){
+                    case 'addResize1':
+                        elemType = "data";
+                        break;
+                    case 'addResize2':
+                        elemType = "meter";
+                        break;
+                    case 'addResize3':
+                        elemType = "graph";
+                        break;
+                    case 'addResize4':
+                        elemType = "negativeGraph";
+                        break;
+                }
+                elemToAdd = elemType;
+                
+                // document.querySelectorAll(".resizable").forEach((x)=>{
+                // })
+            }
+
+            var savedMenu = null;
+            function showMenu(elem) {
+                document.querySelectorAll('.menuButton').forEach(x => {
+                    x.style.pointerEvents = 'none';
+                });
+                var overlay = document.createElement('div');
+                overlay.setAttribute('id',"overlay");
+                overlay.style.width = "100%";
+                overlay.style.height = "100%";
+                overlay.style.background = "rgba(0,0,0,0.2)";
+                overlay.style.position = 'absolute';
+                overlay.style.top = 0;
+                overlay.style.left = 0;
+                overlay.style.zIndex = 500;
+                document.body.appendChild(overlay);
+                var menu = elem.nextElementSibling;
+                if(menu.classList.contains('show')
+                    || menu.classList.contains('hide')){
+                    menu.classList.toggle('hide');
+                }
+                menu.classList.toggle('show');
+                overlay.addEventListener('click',hideMenu,false);
+                menu.addEventListener('click',menuClick,false);
+                document.querySelectorAll(".resizable").forEach((x)=>{
+                    x.removeEventListener('mouseover', addResizable);
+                });
+                overlayActive = true;
+                savedMenu = menu;
+            }
+            function hideMenu(elem){
+                if(savedMenu.classList.contains('show')){
+                    savedMenu.classList.toggle('hide');
+                }
+                // savedMenu.classList.toggle('hide');
+                savedMenu.classList.toggle('show');
+                document.getElementById("overlay").remove();
+                try{
+                    elem.stopPropagation();
+                }
+                catch(e){
+                }
+                document.querySelectorAll(".resizable").forEach((x)=>{
+                    x.addEventListener('mouseover', addResizable);
+                });
+                overlayActive = false;
+                document.querySelectorAll('.menuButton').forEach(x => {
+                    x.style.pointerEvents = 'auto';
+                });
+                if(document.querySelectorAll('#map') != null){
+                    document.querySelectorAll('#map').forEach((x)=>{ 
+                        x.parentNode.removeEventListener('mouseover',addResizable);
+                        x.parentNode.style.pointerEvents = 'auto';
+                        x.style.pointerEvents = 'auto';
+                        //reloadMap();
+                    });
+                }
+            }
+
+            function Move(elem){
+                elem.style.pointerEvents = 'none';
+                if(savedMenu.classList.contains('show')){
+                    savedMenu.classList.toggle('hide');
+                }
+                // savedMenu.classList.toggle('hide');
+                savedMenu.classList.toggle('show');
+                document.getElementById("overlay").remove();
+                document.querySelectorAll(".resizable").forEach((x)=>{
+                    x.addEventListener('mouseover', addResizable);
+                });
+                overlayActive = false;
+                document.querySelectorAll('.menuButton').forEach(x => {
+                    x.style.pointerEvents = 'auto';
+                });
+            }
+
+            function menuClick(e){
+                e.stopPropagation();
+            }
+
+            function checkRectanglesMove(e){
+                document.querySelectorAll(".resizable").forEach((x)=>{
+                    if(!(e.target.id).includes(x.getAttribute('id')) && document.getElementById(x.getAttribute('id') + 'canvas') != null){
+                        document.getElementById(x.getAttribute('id') + 'canvas').remove();
+                    }
+                });
+                var elem = e.target.id; 
+                elem = "#" + elem;
+                if(elem !== "#"){
+                    var cvs = document.createElement('canvas');
+                    cvs.setAttribute("id", e.target.id+'canvas');
+                    cvs.style.position = 'absolute';
+                    var topOffset, leftOffset;
+                    if($(elem).offset() === undefined){
+                        topOffset = 0;
+                        leftOffset = 0;
+                    }
+                    else{
+                        topOffset = $(elem).offset().top;
+                        leftOffset = $(elem).offset().left;
+                    }
+                    cvs.style.top = topOffset.toString() + 'px';
+                    cvs.style.left = leftOffset.toString() + 'px';
+                    cvs.style.width = $(elem).outerWidth().toString() + 'px';
+                    cvs.style.height = $(elem).outerHeight().toString() + 'px';
+                    cvs.style.border = '1px solid rgb(0, 91, 105)';
+                    cvs.style.borderRadius = '5px';
+                    cvs.style.zIndex=1000;
+                    if($(elem).outerWidth() > $(elem).outerHeight()){                    
+                        cvs.style.width = ($(elem).outerWidth()/2).toString() + 'px';
+                        if((e.pageX - leftOffset) < ($(elem).width() / 2)) {
+                            cvs.style.left = leftOffset.toString() + 'px';
+                            orientation = 'left';
+                        }  
+                        else{
+                            cvs.style.left = (leftOffset + $(elem).outerWidth()/2).toString() + 'px';
+                            orientation = 'right';
+                        }                  
+                    }
+                    else{
+                        cvs.style.height = ($(elem).outerHeight()/2).toString() + 'px';
+                        if((e.pageY - topOffset) < ($(elem).height() / 2)) {
+                            // document.querySelector(elem).style.alignContent = 'flex-start';
+                            cvs.style.top = topOffset.toString() + 'px';
+                            orientation = 'top';
+
+                        }  
+                        else{
+                            cvs.style.top = (topOffset + $(elem).height()/2).toString() + 'px';
+                            orientation = 'bottom';
+                        }
+                    }
+                    document.querySelector('body').appendChild(cvs);
+                    cvs.addEventListener('mouseout',()=>{
+                        cvs.remove();
+                        document.querySelector(elem).removeEventListener('mouseover',doThis);
+                    });
+                }
+            }
+
+            
+            
+
+            function checkRectangles(e){
+                document.querySelectorAll(".resizable").forEach((x)=>{
+                    if(!(e.target.id).includes(x.getAttribute('id')) && document.getElementById(x.getAttribute('id') + 'canvas') != null){
+                        document.getElementById(x.getAttribute('id') + 'canvas').remove();
+                    }
+                });
+                var elem = e.target.id; 
+                elem = "#" + elem;
+                var cvs = document.createElement('canvas');
+                cvs.setAttribute("id", e.target.id+'canvas');
+                cvs.style.position = 'absolute';
+                var topOffset, leftOffset;
+                if($(elem).offset() === undefined){
+                    topOffset = 0;
+                    leftOffset = 0;
+                }
+                else{
+                    topOffset = $(elem).offset().top;
+                    leftOffset = $(elem).offset().left;
+                }
+                cvs.style.top = topOffset.toString() + 'px';
+                cvs.style.left = leftOffset.toString() + 'px';
+                cvs.style.width = $(elem).outerWidth().toString() + 'px';
+                cvs.style.height = $(elem).outerHeight().toString() + 'px';
+                cvs.style.border = '1px solid rgb(0, 91, 105)';
+                cvs.style.borderRadius = '5px';
+                cvs.style.zIndex=1000;
+                if($(elem).outerWidth() > $(elem).outerHeight()){                    
+                    cvs.style.width = ($(elem).outerWidth()/2).toString() + 'px';
+                    if((e.pageX - leftOffset) < ($(elem).width() / 2)) {
+                        cvs.style.left = leftOffset.toString() + 'px';
+                        orientation = 'left';
+                    }  
+                    else{
+                        cvs.style.left = (leftOffset + $(elem).outerWidth()/2).toString() + 'px';
+                        orientation = 'right';
+                    }                  
+                }
+                else{
+                    cvs.style.height = ($(elem).outerHeight()/2).toString() + 'px';
+                    if((e.pageY - topOffset) < ($(elem).height() / 2)) {
+                        // document.querySelector(elem).style.alignContent = 'flex-start';
+                        cvs.style.top = topOffset.toString() + 'px';
+                        orientation = 'top';
+
+                    }  
+                    else{
+                        cvs.style.top = (topOffset + $(elem).height()/2).toString() + 'px';
+                        orientation = 'bottom';
+                    }
+                }
+                document.querySelector('body').appendChild(cvs);
+                var check = true;
+                cvs.addEventListener('click',()=>{
+                    document.querySelector('body').removeChild(cvs);
+                    document.querySelector(elem).addEventListener('mouseover',doThis);
+                    // check = false;
+                });
+                if(check){
+                    cvs.addEventListener('mouseout',()=>{
+                        cvs.remove();
+                        document.querySelector(elem).removeEventListener('mouseover',doThis);
+                    });
+                }
+            }
+
+            function resizableX(resizableName) {
+                const resizer = document.querySelector(resizableName);
+                resizer.addEventListener("mousedown", onmousedown);
+                resizer.addEventListener("touchstart", ontouchstart);
+
+                // for mobile
+                function ontouchstart(e) {
+                e.preventDefault();
+                resizer.addEventListener("touchmove", ontouchmove);
+                resizer.addEventListener("touchend", ontouchend);
+                document.querySelectorAll('iframe').forEach((x)=>{
+                    x.style.pointerEvents = 'none';
+                });
+                }
+                function ontouchmove(e) {
+                e.preventDefault();
+                const clientX = e.touches[0].clientX;
+                const deltaX = clientX - (resizer._clientX || clientX);
+                resizer._clientX = clientX;
+                const l = resizer.previousElementSibling;
+                const r = resizer.nextElementSibling;
+                // LEFT
+                if (deltaX < 0) {
+                    const w = Math.round(parseInt(getComputedStyle(l).width) + deltaX);
+                    l.style.flex = `0 ${w < 10 ? 0 : w}px`;
+                    r.style.flex = "1 0";
+                }
+                // RIGHT
+                if (deltaX > 0) {
+                    const w = Math.round(parseInt(getComputedStyle(r).width) - deltaX);
+                    r.style.flex = `0 ${w < 10 ? 0 : w}px`;
+                    l.style.flex = "1 0";
+                }
+                }
+                function ontouchend(e) {
+                e.preventDefault();
+                resizer.removeEventListener("touchmove", ontouchmove);
+                resizer.removeEventListener("touchend", ontouchend);
+                delete e._clientX;
+                document.querySelectorAll('iframe').forEach((x)=>{
+                    x.style.pointerEvents = 'auto';
+                });
+                }
+
+                // for desktop
+                function onmousedown(e) {
+                e.preventDefault();
+                document.addEventListener("mousemove", onmousemove);
+                document.addEventListener("mouseup", onmouseup);
+                document.querySelectorAll('iframe').forEach((x)=>{
+                    x.style.pointerEvents = 'none';
+                });
+                }
+                function onmousemove(e) {
+                e.preventDefault();
+                const clientX = e.clientX;
+                const deltaX = clientX - (resizer._clientX || clientX);
+                resizer._clientX = clientX;
+                const l = resizer.previousElementSibling;
+                const r = resizer.nextElementSibling;
+                // LEFT
+                if (deltaX < 0) {
+                    const w = Math.round(parseInt(getComputedStyle(l).width) + deltaX);
+                    l.style.flex = `0 ${w < 10 ? 0 : w}px`;
+                    r.style.flex = "1 0";
+                }
+                // RIGHT
+                if (deltaX > 0) {
+                    const w = Math.round(parseInt(getComputedStyle(r).width) - deltaX);
+                    r.style.flex = `0 ${w < 10 ? 0 : w}px`;
+                    l.style.flex = "1 0";
+                }
+                }
+                function onmouseup(e) {
+                e.preventDefault();
+                document.removeEventListener("mousemove", onmousemove);
+                document.removeEventListener("mouseup", onmouseup);
+                delete e._clientX;
+                document.querySelectorAll('iframe').forEach((x)=>{
+                    x.style.pointerEvents = 'auto';
+                });
+                }
+            }
+
+            // vertical direction
+            function resizableY(resizableName) {
+                
+                const resizer = document.querySelector(resizableName);
+                resizer.addEventListener("mousedown", onmousedown);
+                resizer.addEventListener("touchstart", ontouchstart);
+
+                // for mobile
+                function ontouchstart(e) {
+                e.preventDefault();
+                resizer.addEventListener("touchmove", ontouchmove);
+                resizer.addEventListener("touchend", ontouchend);
+                document.querySelectorAll('iframe').forEach((x)=>{
+                    x.style.pointerEvents = 'none';
+                });
+                }
+                function ontouchmove(e) {
+                e.preventDefault();
+                const clientY = e.touches[0].clientY;
+                const deltaY = clientY - (resizer._clientY || clientY);
+                resizer._clientY = clientY;
+                const t = resizer.previousElementSibling;
+                const b = resizer.nextElementSibling;
+                // UP
+                if (deltaY < 0) {
+                    const h = Math.round(parseInt(getComputedStyle(t).height) + deltaY);
+                    t.style.flex = `0 ${h < 10 ? 0 : h}px`;
+                    b.style.flex = "1 0";
+                }
+                // DOWN
+                if (deltaY > 0) {
+                    const h = Math.round(parseInt(getComputedStyle(b).height) - deltaY);
+                    b.style.flex = `0 ${h < 10 ? 0 : h}px`;
+                    t.style.flex = "1 0";
+                }
+                }
+                function ontouchend(e) {
+                e.preventDefault();
+                resizer.removeEventListener("touchmove", ontouchmove);
+                resizer.removeEventListener("touchend", ontouchend);
+                delete e._clientY;
+                document.querySelectorAll('iframe').forEach((x)=>{
+                    x.style.pointerEvents = 'auto';
+                });
+                }
+
+                // for desktop
+                function onmousedown(e) {
+                e.preventDefault();
+                document.addEventListener("mousemove", onmousemove);
+                document.addEventListener("mouseup", onmouseup);
+                document.querySelectorAll('iframe').forEach((x)=>{
+                    x.style.pointerEvents = 'none';
+                });
+                }
+                function onmousemove(e) {
+                e.preventDefault();
+                const clientY = e.clientY;
+                const deltaY = clientY - (resizer._clientY || clientY);
+                resizer._clientY = clientY;
+                const t = resizer.previousElementSibling;
+                const b = resizer.nextElementSibling;
+                
+                // UP
+                if (deltaY < 0) {
+                    const h = Math.round(parseInt(getComputedStyle(t).height) + deltaY);
+                    t.style.flex = `0 ${h < 10 ? 0 : h}px`;
+                    b.style.flex = "1 0";
+                }
+                // DOWN
+                if (deltaY > 0) {
+                    const h = Math.round(parseInt(getComputedStyle(b).height) - deltaY);
+                    b.style.flex = `0 ${h < 10 ? 0 : h}px`;
+                    t.style.flex = "1 0";
+                }
+                }
+                function onmouseup(e) {
+                e.preventDefault();
+                document.removeEventListener("mousemove", onmousemove);
+                document.removeEventListener("mouseup", onmouseup);
+                delete e._clientY;
+                document.querySelectorAll('iframe').forEach((x)=>{
+                    x.style.pointerEvents = 'auto';
+                });
+                }
+            }
+
+            function resizer(){
+            }
+
+            // function previewRectangle(elem){
+            //     var cvs = document.createElement('canvas');
+            //     if($(elem).outerWidth > $(elem).outerHeight){
+                    
+            //     }
+            //     document.querySelector(elem).appendChild()
+            // }
+            
+            function doThis(e){
+                var elem = e.target.id; 
+                elem = "#" + elem;
+                if(document.getElementById(e.target.id + 'canvas') != null){
+                    document.getElementById(e.target.id + 'canvas').remove();
+                }
+                var stored = document.querySelector(elem).innerHTML;
+                document.querySelector(elem).innerHTML = '';
+                // elem = elem.substring(0, elem.length-6);
+                $(elem).removeClass("resizable");
+                var newDiv1 = document.createElement('div');
+                var newDiv2 = document.createElement('div');
+                newDiv1.style.position = 'relative';
+                newDiv2.style.position = 'relative';
+                newDiv1.setAttribute("id","block" + (++blocks));
+                newDiv2.setAttribute("id","block" + (++blocks));
+                newDiv1.setAttribute("class","resizable");
+                newDiv2.setAttribute("class","resizable");
+                newDiv1.style.flex = "50%";
+                newDiv2.style.flex = "50%";
+                if($(elem).outerWidth() > $(elem).outerHeight()){
+                    if(orientation === 'left'){
+                        newDiv2.innerHTML = stored;
+                        newDiv1.innerHTML = menuButtons;
+                    }
+                    else{
+                        newDiv1.innerHTML = stored;
+                        newDiv2.innerHTML = menuButtons;
+                    }
+                    var id = "x" + xResizers++;
+                    $(elem).addClass("resizable-x")
+                    var resizerDiv = document.createElement('div');
+                    resizerDiv.setAttribute("id",id);
+                    resizerDiv.setAttribute("class","resizer-x");
+                    document.querySelector(elem).appendChild(newDiv1);
+                    document.querySelector(elem).appendChild(resizerDiv);
+                    document.querySelector(elem).appendChild(newDiv2);
+
+                    var str = resizer.toString().replace(/\s/g,'');
+                    var strlen = str.length;
+                    var start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    str = str + "resizableX(\"#"+id+"\");";
+                    resizer = new Function(str); 
+                    // resizer();  
+                    // reload = true;                         
+                }
+                else{
+                    if(orientation === 'top'){
+                        newDiv2.innerHTML = stored;
+                        newDiv1.innerHTML = menuButtons;
+                    }
+                    else{
+                        newDiv1.innerHTML = stored;
+                        newDiv2.innerHTML = menuButtons;
+                    }
+                    var id = "y" + yResizers++;
+                    $(elem).addClass("resizable-y")
+                    var resizerDiv = document.createElement('div');
+                    resizerDiv.setAttribute("id",id);
+                    resizerDiv.setAttribute("class","resizer-y");
+                    document.querySelector(elem).appendChild(newDiv1);
+                    document.querySelector(elem).appendChild(resizerDiv);
+                    document.querySelector(elem).appendChild(newDiv2);       
+                    
+                    var str = resizer.toString().replace(/\s/g,'');
+                    var strlen = str.length;
+                    var start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    // console.log(str);
+                    str = str + "resizableY(\"#"+id+"\");";
+                    resizer = new Function(str);   
+
+                    // reload = true; 
+                }
+
+                document.querySelector(elem).replaceWith(document.querySelector(elem).cloneNode(true));
+                document.querySelectorAll(".resizable").forEach((x)=>{
+                    var repl = x.cloneNode(true);
+                    repl.addEventListener('mouseover', addResizable);
+                    x.replaceWith(repl);
+                });
+                elemBeingAdded = false;
+                resizer();
+                if(document.querySelectorAll('#map') != null){
+                    document.querySelectorAll('#map').forEach((x)=>{ 
+                        x.parentNode.removeEventListener('mouseover', addResizable);
+                        x.parentNode.style.pointerEvents = 'auto';
+                        x.style.pointerEvents = 'auto';
+                        reloadMap();
+                    });
+                }
+
+                var newElem;
+                if(elemToAdd === "data"){
+                    newElem = document.createElement('div');
+                    newElem.id = "data" + ++datablocks;
+                    newElem.classList.add('data');
+
+                    var str = setupMsg.toString();
+                    strlen = str.length;
+                    start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    str += 'onMsg("'+packetVals[0]+'","'+newElem.id+'");';
+                    setupMsg = new Function(str);
+                }
+                else if(elemToAdd === "meter"){
+                    newElem = document.createElement('canvas');
+                    newElem.id = "meter" + ++meterblocks;
+                    newElem.classList.add('meter');
+                    newElem.style.width = '100%';
+                    newElem.style.height = '100%';
+
+                    var str = meterUpdate.toString();
+                    strlen = str.length;
+                    start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    str = str + 'animateMeter("'+ packetVals[0] +'","' 
+                    + newElem.id +'");';
+                    meterUpdate = new Function(str);
+                }
+                else{
+                    newElem = document.createElement('canvas');
+                    newElem.id = "graph" + ++graphblocks;
+                    newElem.classList.add('graph');
+                    newElem.style.width = '100%';
+
+                    var lensVal = lens.length;
+                    lens.push(lens[0]);
+                    var str = graphUpdate.toString();
+                    strlen = str.length;
+                    start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    if(elemToAdd === "graph"){
+                        str = str + 'animateGraph("'+ packetVals[0] +'","' 
+                        + newElem.id +'",lens['+lensVal+']++);';
+                    }
+                    else{
+                        str = str + 'animateNegativeGraph("'+ packetVals[0] +'","' 
+                        + newElem.id +'",lens['+lensVal+']++);';
+                    }
+                    graphUpdate = new Function(str);
+                }
+                var elemparent;
+                if(orientation === 'left' || orientation === 'top'){
+                    elemparent = document.getElementById('block' + (blocks-1));
+                }
+                else{
+                    elemparent = document.getElementById('block' + blocks);
+                }
+                elemparent.prepend(newElem);
+                addCustomLineButton("#" + newElem.id);
+                if(newElem.id.includes("meter") || newElem.id.includes("graph")){
+                    scaleCanvas(newElem.id);
+                    if(newElem.id.includes("meter")){
+                        meterUpdate();
+                    }
+                    else{
+                        // console.log(graphUpdate.toString());
+                        graphUpdate();
+                    }
+                }
+                else{
+                    setupMsg();
+                }
+                var gChild;
+                outer:for(const child of elemparent.children){
+                    // console.log(child.classList);
+                    if(child.classList.contains("menu")){
+                        child.click();
+                        // child = child.nextSibling();
+                        // console.log(child);
+                        // break;
+                        // for(const grandChild of child.children[0].children){
+                        //     if(grandChild.innerHTML.includes("Modify Graph")){
+                        //         grandChild.click();
+                        //         break outer;
+                        //     }
+                        // }
+                    }
+                    if(child.classList.contains("menu-dropdown")){
+                        for(const grandChild of child.children[0].children){
+                            if(grandChild.innerHTML.includes("Modify Graph")){
+                                grandChild.firstChild.click();
+                                break outer;
+                            }
+                        }
+                    }
+                }
+            }
+
+            function remove(elem){
+                var ancestorNode = elem.parentNode.parentNode.parentNode.parentNode;
+                var parent = ancestorNode.parentNode;
+
+                var ancestorDataId = ancestorNode.children[0].id;
+                var str;
+                if(ancestorDataId.includes('data')){
+                    str = setupMsg.toString().replace(/\s/g,'');
+                    strlen = str.length;
+                    start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    if(str.includes(ancestorDataId)){
+                        var dataIndex = str.indexOf(ancestorDataId);
+                        var startIndex = str.lastIndexOf(";",dataIndex) + 1;
+                        var endIndex = str.indexOf(";",dataIndex) + 1;
+                        var substringToRemove = str.substring(startIndex, endIndex);
+                        str = str.replace(substringToRemove,"");  
+                    }
+                    setupMsg = new Function(str);
+                }
+                else if(ancestorDataId.includes('meter')){
+                    str = meterUpdate.toString().replace(/\s/g,'');
+                    strlen = str.length;
+                    start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    if(str.includes(ancestorDataId)){
+                        var dataIndex = str.indexOf(ancestorDataId);
+                        var startIndex = str.lastIndexOf(";",dataIndex) + 1;
+                        var endIndex = str.indexOf(";",dataIndex) + 1;
+                        var substringToRemove = str.substring(startIndex, endIndex);
+                        str = str.replace(substringToRemove,"");  
+                    }
+                    meterUpdate = new Function(str);
+                }
+                else if(ancestorDataId.includes('graph')){
+                    str = graphUpdate.toString().replace(/\s/g,'');
+                    strlen = str.length;
+                    start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    if(str.includes(ancestorDataId)){
+                        var dataIndex = str.indexOf(ancestorDataId);
+                        var startIndex = str.lastIndexOf(";",dataIndex) + 1;
+                        var endIndex = str.indexOf(";",dataIndex) + 1;
+                        var substringToRemove = str.substring(startIndex, endIndex);
+                        str = str.replace(substringToRemove,"");  
+                    }
+                    graphUpdate = new Function(str);
+                }
+                var stored;
+                var storedClassName;
+                if(ancestorNode === parent.children[2]){
+                    stored = parent.children[0].innerHTML;
+                    storedClassName = parent.children[0].classList;
+                }
+                else if(ancestorNode === parent.children[0]){
+                    stored = parent.children[2].innerHTML;
+                    storedClassName = parent.children[2].classList;
+                }
+                var resizerToRemove = '#' + parent.children[1].id;
+                parent.classList = storedClassName;
+                parent.innerHTML = stored;
+                parent.replaceWith(parent.cloneNode(true));
+                str = resizer.toString().replace(/\s/g,'');
+                var strlen = str.length;
+                var start = str.indexOf('{');
+                str = str.substring(start+1,strlen-1);
+                if(str.includes(resizerToRemove)){
+                    var dataIndex = str.indexOf(resizerToRemove);
+                    var startIndex = str.lastIndexOf(";",dataIndex) + 1;
+                    var endIndex = str.indexOf(";",dataIndex) + 1;
+                    var substringToRemove = str.substring(startIndex, endIndex);
+                    str = str.replace(substringToRemove,"");  
+                }
+                resizer = new Function(str);
+
+                document.getElementById("overlay").remove();
+                document.querySelectorAll(".resizable").forEach((x)=>{
+                    x.addEventListener('mouseover', addResizable);
+                });
+                overlayActive = false;
+                resizer();
+                if(document.querySelectorAll('#map') != null){
+                    document.querySelectorAll('#map').forEach((x)=>{ 
+                        x.parentNode.removeEventListener('mouseover', addResizable);
+                        x.parentNode.style.pointerEvents = 'auto';
+                        x.style.pointerEvents = 'auto';
+                        reloadMap();
+                    });
+                }
+                document.querySelectorAll('.menuButton').forEach(x => {
+                    x.style.pointerEvents = 'auto';
+                });
+            }
+
+            function relocate(elemToMoveTo, itemBeingMoved){
+                if(elemToMoveTo.endsWith('canvas')){
+                    elemToMoveTo = elemToMoveTo.substring(0,elemToMoveTo.length-6);
+                }
+                elem = '#' + elemToMoveTo;
+                var itemID = itemBeingMoved.selector;
+                var itemNode = document.querySelector(itemID);
+                var itemInnerHTML = itemNode.innerHTML;
+                var parentNode = itemNode.parentNode;
+                var resizerToRemove = parentNode.children[1].id;
+                if(parentNode.children[0] === itemNode){
+                    // if(parentNode.children[2].id === elemToMoveTo){
+                        parentNode.id = parentNode.children[2].id;
+                    // }
+                    parentNode.classList = parentNode.children[2].classList;
+                    parentNode.innerHTML = parentNode.children[2].innerHTML;   
+                }
+                else{
+                    // if(parentNode.children[0].id === elemToMoveTo){
+                        parentNode.id = parentNode.children[0].id;
+                    // }
+                    parentNode.classList = parentNode.children[0].classList;
+                    parentNode.innerHTML = parentNode.children[0].innerHTML;
+                }
+
+                var newDiv1 = document.createElement('div');
+                var newDiv2 = document.createElement('div');
+                newDiv1.style.position = 'relative';
+                newDiv2.style.position = 'relative';
+                newDiv1.setAttribute("id","block" + (++blocks));
+                newDiv2.setAttribute("id", itemNode.id);
+                newDiv1.setAttribute("class","resizable");
+                newDiv2.setAttribute("class","resizable");
+                newDiv1.style.flex = "50%";
+                newDiv2.style.flex = "50%";
+                newDiv2.innerHTML = itemNode.innerHTML;
+                newDiv1.innerHTML = document.getElementById(elemToMoveTo).innerHTML;
+                document.getElementById(elemToMoveTo).innerHTML = '';
+                $(elem).removeClass("resizable");
+                // newDiv2.style.flex = "50%";
+                if($(elem).outerWidth() > $(elem).outerHeight()){
+                    $(elem).addClass("resizable-x")
+                    var resizerDiv = document.createElement('div');
+                    resizerDiv.setAttribute("id",resizerToRemove);
+                    resizerDiv.setAttribute("class","resizer-x");
+                    if(orientation === 'left'){
+                        document.querySelector(elem).appendChild(newDiv2);
+                        document.querySelector(elem).appendChild(resizerDiv);
+                        document.querySelector(elem).appendChild(newDiv1);
+                    }
+                    else{
+                        document.querySelector(elem).appendChild(newDiv1);
+                        document.querySelector(elem).appendChild(resizerDiv);
+                        document.querySelector(elem).appendChild(newDiv2);
+                    }
+                    var str = resizer.toString().replace(/\s/g,'');
+                    if(resizerToRemove.includes('y')){
+                        str = str.replace("resizableY(\"#"+resizerToRemove+"\");","resizableX(\"#"+resizerToRemove+"\");");  
+                    }
+                    var strlen = str.length;
+                    var start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    // else{
+                    //     str = str.replace()
+                    // }
+                    // str = str.replace("")"resizableY(\"#"+resizerToRemove+"\");";
+                    resizer = new Function(str);                       
+                }
+                else{
+                    $(elem).addClass("resizable-y")
+                    var resizerDiv = document.createElement('div');
+                    resizerDiv.setAttribute("id",resizerToRemove);
+                    resizerDiv.setAttribute("class","resizer-y");
+                    if(orientation === 'top'){
+                        document.querySelector(elem).appendChild(newDiv2);
+                        document.querySelector(elem).appendChild(resizerDiv);
+                        document.querySelector(elem).appendChild(newDiv1);
+                    }
+                    else{
+                        document.querySelector(elem).appendChild(newDiv1);
+                        document.querySelector(elem).appendChild(resizerDiv);
+                        document.querySelector(elem).appendChild(newDiv2);
+                    }
+                    var str = resizer.toString().replace(/\s/g,'');
+                    if(resizerToRemove.includes('x')){
+                        str = str.replace("resizableX(\"#"+resizerToRemove+"\");","resizableY(\"#"+resizerToRemove+"\");");  
+                    }
+                    var strlen = str.length;
+                    var start = str.indexOf('{');
+                    str = str.substring(start+1,strlen-1);
+                    // else{
+                    //     str = str.replace()
+                    // }
+                    // str = str.replace("")"resizableY(\"#"+resizerToRemove+"\");";
+                    resizer = new Function(str); 
+                    // reload = true; 
+                }
+                if(document.querySelectorAll('iframe') != null){
+                    document.querySelectorAll('iframe').forEach((x)=>{ 
+                        x.style.pointerEvents = 'auto';
+                        x.addEventListener("mouseenter",()=>{
+                            suggest("Open menu to move tile");
+                        });
+                        x.addEventListener("mouseleave",clearSuggestion);
+                    });
+                }
+                
+                document.querySelector(elem).replaceWith(document.querySelector(elem).cloneNode(true));
+                document.querySelectorAll(".resizable").forEach((x)=>{
+                    var repl = x.cloneNode(true);
+                    repl.addEventListener('mouseover', addResizable);
+                    x.replaceWith(repl);
+                });
+                resizer();
+                if(document.querySelectorAll('#map') != null){
+                    document.querySelectorAll('#map').forEach((x)=>{ 
+                        x.parentNode.removeEventListener('mouseover', addResizable);
+                        x.parentNode.style.pointerEvents = 'auto';
+                        x.style.pointerEvents = 'auto';
+                        reloadMap();
+                        x.addEventListener("mouseenter",()=>{
+                            suggest("Open menu to move tile");
+                        });
+                        x.addEventListener("mouseleave", clearSuggestion);
+                    });
+                }
+            }
+            function reloadMap(){
+                // if(document.getElementById('map') != null){
+                //     document.getElementById('map').style.height = $("#" + document.getElementById('map').parentNode.id).innerHeight() + 'px';
+                // }
+                navigator.geolocation.getCurrentPosition(function (position) {
+                    var map = L.map('map', { center: [position.coords.latitude , position.coords.longitude], zoom: 16});
+                    var tile_layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 19,
+                        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    });
+                    tile_layer.addTo(map);
+                    var marker = L.marker([position.coords.latitude,position.coords.longitude],{icon: bluemarker}).addTo(map);
+                    markerRocket = L.marker([mapData.get("GPS Latitude", mapData.get("GPS Longitude"))],{icon: rocketPointer}).addTo(map);
+                    markerRocket.bindPopup("<b>Rocket Location:</b><br>Lat: " + mapData.get("GPS Latitude") +", Lng: " + mapData.get("GPS Longitude"));
+                    // tile_layer.on("load",function() { 
+                    //     if(document.getElementById('loadingRocket')!=null){
+                    //     document.getElementById('loadingRocket').style.animation += ', fade 0.5s forwards ease-out';
+                    //     setTimeout(() => {
+                    //             document.getElementById('loadingRocket').remove();
+                    //             var loader = document.getElementById("loader");
+                    //             loader.style.animation = 'fade 1s forwards ease-out';
+                    //             setTimeout(() => {
+                    //                 document.getElementById("loader").remove()
+                    //             }, 1100); 
+                    //         },700);
+                    //     };
+                    // });
+
+                },
+                function (error){
+                    var map = L.map("map", { center: [51.450584 , -2.5946832], zoom: 12, zoomControl: false });
+                    var tile_layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                        maxZoom: 19,
+                        attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                    });
+                    tile_layer.addTo(map);
+                    // tile_layer.on("load",function() { 
+                    //     if(document.getElementById('loadingRocket')!=null){
+                    //     document.getElementById('loadingRocket').style.animation += ', fade 0.5s forwards ease-out';
+                    //     setTimeout(() => {
+                    //             document.getElementById('loadingRocket').remove();
+                    //             var loader = document.getElementById("loader");
+                    //             loader.style.animation = 'fade 1s forwards ease-out';
+                    //             setTimeout(() => {
+                    //                 document.getElementById("loader").remove()
+                    //             }, 1100); 
+                    //         },700);
+                    //     };
+                    // });
+                });
+                // var map = L.map('map').locate({setView: true, maxZoom: 16});;
+                // L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                //     maxZoom: 19,
+                //     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                // }).addTo(map);
+
+                // var bluemarker = L.icon({
+                //     iconUrl: '/static/logos/pin.png',
+                //     shadowUrl: '/static/logos/pin.png',
+
+                //     iconSize:     [25, 25], // size of the icon
+                //     shadowSize:   [0, 0], // size of the shadow
+                //     iconAnchor:   [12, 22], // point of the icon which will correspond to marker's location
+                //     shadowAnchor: [0, 0],  // the same for the shadow
+                //     popupAnchor:  [12, 0] // point from which the popup should open relative to the iconAnchor
+                // });
+                // navigator.geolocation.getCurrentPosition(function (position) {
+                //     var marker = L.marker([position.coords.latitude,position.coords.longitude],{icon: bluemarker}).addTo(map);
+                // })
+            }
+
+            const defaultColours = [[255,255,255],[127.5,0,0],[0,127.5,0],[0,0,127.5]];
+            var setupMsg = function() {
+                onMsg("GyroX","data1",
+                    "GyroY",
+                    "GyroZ",
+                    "AccX",
+                    "AccY",
+                    "AccZ");
+                onMsg("GyroX","data2",
+                    "GyroY",
+                    "GyroZ",
+                    "AccX",
+                    "AccY",
+                    "AccZ");
+            }
+            var onMsg = function(name, elem, ...more) {
+                if(elem.toString().includes("#")){
+                    elem = elem.toString().replace("#","");
+                }
+                var values = [name,...more];
+                // console.log(values);
+                var rows = Math.ceil(values.length/3);
+                var columns = 3;
+                var container = document.createElement('div');
+                container.style.height = "100%";
+                container.style.width = "100%";
+                container.style.display = 'flex';
+                container.style.flexDirection = 'column';
+                container.style.alignItems = 'stretch';
+                container.style.justifyContent = 'space-between';
+                for(var i = 0; i < rows; i ++){
+                    var newDiv = document.createElement('div');
+                    newDiv.style.width = "100%";
+                    newDiv.style.display = 'flex';
+                    newDiv.style.flexDirection = 'row';
+                    newDiv.style.alignItems = 'stretch';
+                    newDiv.style.justifyContent = 'space-between';
+                    for(var j = 3*i; j < Math.min(values.length, 3*(i+1)); j++){
+                        var smallDiv = document.createElement('div');
+                        smallDiv.innerHTML = `<span style="font-size:12px;white-space:nowrap;overflow:hidden;width:50%;">`+values[j]+`</span><br>` + mapData.get(name);
+                        smallDiv.style.width = '30%';
+                        smallDiv.style.overflow = 'hidden';
+                        smallDiv.style.padding = '2px';
+                        // smallDiv.style.textAlign = 'center';
+                        newDiv.appendChild(smallDiv);
+                    }
+                    container.appendChild(newDiv);
+                }
+                // for(var val of values){
+                //     var newDiv = document.createElement('div');
+                //     newDiv.innerHTML = `<span></span>`
+                // }
+                document.getElementById(elem).innerHTML = "";
+                document.getElementById(elem).appendChild(container);
+                // $("#data3").text(thisNum);
             }
 
             var setupMeters = function() {
-                scaleCanvas("meter3");
+                scaleCanvas("meter1");
+                scaleCanvas("meter2");
             }
 
             var setupGraphs = function() {
-                scaleCanvas("graph4");
+                scaleCanvas("graph1");
+                scaleCanvas("graph2");
+                // scaleCanvas("graph8");
             }
 
             function scaleCanvas(elem){
                 var c=document.getElementById(elem);
-                scaleFactor = 5;
+                scaleFactor = 2;
                 c.width = Math.ceil(c.width * scaleFactor);
                 c.height = Math.ceil(c.height * scaleFactor);
             }
 
-            var meterUpdate = function(e) {
-                animateMeter("meter3", 150);
+            var meterUpdate = function() {
+                animateMeter("Barometer Pressure", "meter1");
+                animateMeter("Barometer Pressure", "meter2");
             }
 
-            function animateMeter(elem, maxVal){
+            function animateMeter(Name, elem, maxVal = null){
+                if(maxVal === null || maxVal < mapMax.get(Name)){
+                    maxVal = mapMax.get(Name)*1.2;
+                }
+                var e = mapData.get(Name);
+                var maxNum = mapMax.get(Name);
                 // thisNum = parseInt(thisNum);
                 var c=document.getElementById(elem);
-                scaleFactor = 5;
+                c.style.width = "80%";
+                c.style.height = "auto";
+                scaleFactor = 2;
                 // // c.style.width = c.style.width || c.width + 'px';
                 // // c.style.height = c.style.height || c.height + 'px';
 
@@ -93,8 +1849,14 @@
                 ctx.translate(c.width/2, c.height - 1/10*c.height);
                 
                 ctx.scale(scaleFactor, scaleFactor);
+                ctx.font = "15px SpaceMono";
+                ctx.fillStyle = "white";
+                var textInteger = parseInt(e);
+                var textDecimal = ((e - textInteger).toFixed(2)).toString().substring(1);
+                textInteger = textInteger.toString().padStart(3," ");
+                ctx.fillText(textInteger+textDecimal,-30,0);
                 var piDiv = 120;
-                var numBlocks = Math.floor(parseInt(thisNum)*piDiv/maxVal);
+                var numBlocks = Math.floor(parseInt(e)*piDiv/maxVal);
                 for(var i = 0; i <= numBlocks; i ++){
                     ctx.beginPath();
                     var rad = i*Math.PI/piDiv;
@@ -148,61 +1910,129 @@
                 // console.log(maxNum);
                 ctx.arc(0,0, radius, Math.PI, (Math.PI +  Math.PI * maxNum/maxVal));
                 ctx.stroke();
+                var sWidth = c.width;
+                var sHeight = c.height;
+                var path=new Path2D();
+                cosV = Math.cos(maxNum*Math.PI/maxVal);
+                sinV = Math.sin(maxNum*Math.PI/maxVal);
+                path.moveTo(-115 * cosV, -115 * sinV);
+                
+                cosV = Math.cos((maxNum-(1/(piDiv/maxVal)))*Math.PI/maxVal);
+                sinV = Math.sin((maxNum-(1/(piDiv/maxVal)))*Math.PI/maxVal);
+                path.lineTo(-120 * cosV, -120 * sinV);
+                cosV = Math.cos((maxNum+(1/(piDiv/maxVal)))*Math.PI/maxVal);
+                sinV = Math.sin((maxNum+(1/(piDiv/maxVal)))*Math.PI/maxVal);
+                path.lineTo(-120 * cosV, -120 * sinV);
+                ctx.font = "8px SpaceMono";
+                ctx.fillStyle = "white";
+                ctx.textAlight = "end";
+                ctx.fillText(maxNum, -125 * cosV, -125 * sinV)
+                ctx.fill(path);
+                
                 ctx.resetTransform();
                 // requestAnimationFrame(animate);
             }
-
-            var graphUpdate = function(e, ...more) {
-                animateGraph(e, "graph4", ...more);
+            var lens = [0,0]
+            // var dataPoints = [2,3];
+            // var dataNames = [
+            //     ["IMU Temperatire","Barometer Pressure"],
+            //     ["AccZ","AccX","AccY"]
+            // ];
+            var graphUpdate = function() {
+                animateGraph("IMU Temperature", "graph1", lens[0]++,"Barometer Pressure");
+                animateNegativeGraph("AccZ", "graph2", lens[1]++,"AccX","AccY");
             }
-
-            function animateGraph(e, elem, ...more){
+            function animateGraph(name, elem, len, ...more){
                 // thisNum = parseInt(thisNum);
-
-                var tempNum = e.data;
-                var maxPoints = 500;
-                if(graphMap.length === maxPoints){
-                    graphMap.shift();
-                }
-                if(tempNum != null){
-                    graphMap.push(tempNum);
-                }
-                else{
-                    graphMap.push(0);
-                }
-                var c=document.getElementById(elem);
-                scaleFactor = 5;
+                var e = mapData.get(name);
+                var tempNum = Number(e).toFixed(5);
+                var maxPoints = Math.min(500,StoredData.length);
+                var tempMaxNum = 10;
+                var valueMaps = [];
+                // var graphMap = [];
                 var lineGraphs = 1 + more.length;
+                var names = [name,...more]
+                for(var j = 0; j < lineGraphs; j++){
+                    let tempName = names[j];
+                    let graphMap = [];
+                    for(var i = 0; i < StoredData.length; i++){
+                        let temp = StoredData[i].get(tempName);
+                        graphMap.push(temp);
+                        if(temp > tempMaxNum){
+                            tempMaxNum = temp;
+                        }
+                    }
+                    valueMaps.push([...graphMap]);
+                }
+                // if(graphMap.length === maxPoints){
+                //     graphMap.shift();
+                // }
+                // if(tempNum != null){
+                //     graphMap.push(tempNum);
+                // }
+                // else{
+                //     graphMap.push(0);
+                // }
+                len++;
+                var c=document.getElementById(elem);
+                scaleFactor = 2;
+                
                 ctx = c.getContext("2d");
                 ctx.clearRect(0, 0, c.width, c.height);
                 ctx.scale(scaleFactor, scaleFactor);
-                ctx.beginPath();
-                ctx.strokeStyle = "#ffffff";
-                var scaleDenom = scaleFactor * 10
-                ctx.moveTo((0.5/scaleDenom)*c.width, (1/scaleDenom)*c.height);
-                ctx.lineTo((0.5/scaleDenom)*c.width, (9/scaleDenom)*c.height);
-                ctx.lineTo((9.5/scaleDenom)*c.width, (9/scaleDenom)*c.height);
-                ctx.stroke();
-                var tempMaxNum;
+                
                 var colours = [];
                 for(var j = 0; j < lineGraphs; j++){
-                    if(j == 0){
-                        tempMaxNum = Math.max(...graphMap);
-                        colours.push(["rgb(127.5,0,0)","rgba(127.5,0,0,0.1)", "rgba(127.5,0,0,0.05)"]);
-                    }
-                    else{
-                        tempMaxNum = Math.max(...(more[j-1]), tempMaxNum);
-                        colours.push(["rgb(0,127.5,0)","rgba(0,127.5,0,0.1)","rgba(0,127.5,0,0.05)"]);
-                    }
+                    colours.push(
+                        ["rgb("+ defaultColours[j][0] +","+ defaultColours[j][1] +","+ defaultColours[j][2] +")",
+                        "rgba("+ defaultColours[j][0] +","+ defaultColours[j][1] +","+ defaultColours[j][2] +",0.1)", 
+                        "rgba("+ defaultColours[j][0] +","+ defaultColours[j][1] +","+ defaultColours[j][2] +",0.05)"]
+                    );
                 }
+                ctx.beginPath();
+                ctx.strokeStyle = "#ffffff";
+                var scaleDenom = scaleFactor * 10;
+                ctx.font = "7px SpaceMono";
+                ctx.fillStyle = 'white';
+                ctx.moveTo((1.3/scaleDenom)*c.width, (2/scaleDenom)*c.height);
+                ctx.fillText(parseInt(tempMaxNum).toString().padStart(3," "),(0.7/scaleDenom)*c.width, (2/scaleDenom)*c.height);
+                ctx.lineTo((1.5/scaleDenom)*c.width, (2/scaleDenom)*c.height);
+                ctx.lineTo((1.5/scaleDenom)*c.width, (4/scaleDenom)*c.height);
+
+                ctx.moveTo((1.3/scaleDenom)*c.width, (4/scaleDenom)*c.height);
+                ctx.fillText(parseInt(0.66*tempMaxNum).toString().padStart(3," "),(0.7/scaleDenom)*c.width, (4/scaleDenom)*c.height);
+                ctx.lineTo((1.5/scaleDenom)*c.width, (4/scaleDenom)*c.height);
+                ctx.lineTo((1.5/scaleDenom)*c.width, (6/scaleDenom)*c.height);
+
+                ctx.moveTo((1.3/scaleDenom)*c.width, (6/scaleDenom)*c.height);
+                ctx.fillText(parseInt(0.33*tempMaxNum).toString().padStart(3," "),(0.7/scaleDenom)*c.width, (6/scaleDenom)*c.height);
+                ctx.lineTo((1.5/scaleDenom)*c.width, (6/scaleDenom)*c.height);
+                ctx.lineTo((1.5/scaleDenom)*c.width, (8.2/scaleDenom)*c.height);
+                ctx.fillText(parseInt(len - maxPoints),(1.27/scaleDenom)*c.width, (8.7/scaleDenom)*c.height);
+                
+                ctx.moveTo((1.3/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+                ctx.fillText('0'.padStart(3," "),(0.7/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+
+                ctx.lineTo((3.83/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+
+                ctx.moveTo((3.83/scaleDenom)*c.width, (8.2/scaleDenom)*c.height);
+                ctx.fillText(len - maxPoints + parseInt(0.33*(maxPoints)),(3.6/scaleDenom)*c.width, (8.7/scaleDenom)*c.height);
+                ctx.lineTo((3.83/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+                ctx.lineTo((6.16/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+
+                ctx.moveTo((6.16/scaleDenom)*c.width, (8.2/scaleDenom)*c.height);
+                ctx.fillText(len - maxPoints + parseInt(0.66*(maxPoints)),(5.93/scaleDenom)*c.width, (8.7/scaleDenom)*c.height);
+                ctx.lineTo((6.16/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+                ctx.lineTo((8.5/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+                
+                ctx.moveTo((8.5/scaleDenom)*c.width, (8.2/scaleDenom)*c.height);
+                ctx.fillText(parseInt(len),(8.26/scaleDenom)*c.width, (8.7/scaleDenom)*c.height);
+                ctx.lineTo((8.5/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+
+                ctx.stroke();
                 for(var j = 0; j < lineGraphs; j++){
                     var newMap;
-                    if(j == 0){
-                        newMap = [...graphMap];
-                    }
-                    else{
-                        newMap = [...(more[j-1])];
-                    }
+                    newMap = [...valueMaps[j]]
                     // // c.style.width = c.style.width || c.width + 'px';
                     // // c.style.height = c.style.height || c.height + 'px';
 
@@ -214,7 +2044,7 @@
                     ctx.strokeStyle = colours[j][0];
                     ctx.lineWidth = "0.2";
                     timeline = newMap.length;
-                    ctx.moveTo((0.5/scaleDenom)*c.width, (9/scaleDenom)*c.height);
+                    ctx.moveTo((1.5/scaleDenom)*c.width, (8/scaleDenom)*c.height);
                     ctx.lineWidth = "1";
                     var scaleXAxis;
                     var scaleYAxis;
@@ -223,386 +2053,297 @@
                         scaleXAxis = i/timeline;
                         scaleYAxis;
                         scaleYAxis = tempNum/tempMaxNum;
-                        ctx.lineTo(c.width*((0.5 + (scaleXAxis*9))/scaleDenom), c.height*((1+((1-scaleYAxis)*8))/scaleDenom));
+                        ctx.lineTo(c.width*((1.5 + (scaleXAxis*7))/scaleDenom), c.height*((2+((1-scaleYAxis)*6))/scaleDenom));
                     }    
+                    ctx.fillStyle = colours[j][0];
+                    ctx.fillText(Number(tempNum).toFixed(2),(8.6/scaleDenom)*c.width, (2+((1-scaleYAxis)*6))*c.height/scaleDenom);
                     ctx.stroke();
-                    const grad=ctx.createLinearGradient(c.width*((0.5 + (scaleXAxis*9))/scaleDenom)
-                                                        , c.height*((1+((1-scaleYAxis)*8))/scaleDenom)
-                                                        , (9.5/scaleDenom)*c.width, (9/scaleDenom)*c.height);
+                    const grad=ctx.createLinearGradient(c.width*((1.5 + (scaleXAxis*7))/scaleDenom)
+                                                        , c.height*((2+((1-scaleYAxis)*6))/scaleDenom)
+                                                        , (8.5/scaleDenom)*c.width, (8/scaleDenom)*c.height);
                     grad.addColorStop(0, colours[j][1]);
                     grad.addColorStop(1, colours[j][2]); 
                     // ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
                     ctx.fillStyle = grad;
-                    ctx.lineTo((9.5/scaleDenom)*c.width, (9/scaleDenom)*c.height);
+                    ctx.lineTo((8.5/scaleDenom)*c.width, (8/scaleDenom)*c.height);
                     ctx.fill();
                 }
                 ctx.resetTransform();
             }
 
+            var len = 0;
+            function animateNegativeGraph(name, elem,len, ...more){
+                // thisNum = parseInt(thisNum);
+                var e = mapData.get(name);
+                var tempNum = Number(e).toFixed(5);
+                var maxPoints = Math.min(500, StoredData.length);
+                var tempMaxNum = 10;
+                var valueMaps = [];
+                // var graphMap = [];
+                var lineGraphs = 1 + more.length;
+                var names = [name,...more]
+                for(var j = 0; j < lineGraphs; j++){
+                    let tempName = names[j];
+                    let graphMap = [];
+                    for(var i = 0; i < StoredData.length; i++){
+                        let temp = StoredData[i].get(tempName);
+                        graphMap.push(temp);
+                        if(Math.abs(temp) > tempMaxNum){
+                            tempMaxNum = Math.abs(temp);
+                        }
+                    }
+                    valueMaps.push([...graphMap]);
+                }
+                // if(graphMap.length === maxPoints){
+                //     graphMap.shift();
+                // }
+                // if(tempNum != null){
+                //     graphMap.push(tempNum);
+                // }
+                // else{
+                //     graphMap.push(0);
+                // }
+                len++;
+                var c=document.getElementById(elem);
+                scaleFactor = 2;
+                ctx = c.getContext("2d");
+                ctx.clearRect(0, 0, c.width, c.height);
+                ctx.scale(scaleFactor, scaleFactor);
+                
+                var colours = [];
+                for(var j = 0; j < lineGraphs; j++){
+                    colours.push(
+                        ["rgb("+ defaultColours[j][0] +","+ defaultColours[j][1] +","+ defaultColours[j][2] +")",
+                        "rgba("+ defaultColours[j][0] +","+ defaultColours[j][1] +","+ defaultColours[j][2] +",0.1)", 
+                        "rgba("+ defaultColours[j][0] +","+ defaultColours[j][1] +","+ defaultColours[j][2] +",0.05)"]
+                    );
+                }
+                ctx.beginPath();
+                ctx.strokeStyle = "#ffffff";
+                var scaleDenom = scaleFactor * 10;
+                ctx.font = "7px SpaceMono";
+                ctx.fillStyle = 'white';
+                ctx.moveTo((1.3/scaleDenom)*c.width, (2/scaleDenom)*c.height);
+                ctx.fillText(parseInt(tempMaxNum).toString().padStart(3," "),(0.7/scaleDenom)*c.width, (2/scaleDenom)*c.height);
+                ctx.lineTo((1.5/scaleDenom)*c.width, (2/scaleDenom)*c.height);
+                ctx.lineTo((1.5/scaleDenom)*c.width, (3.5/scaleDenom)*c.height);
+
+                ctx.moveTo((1.3/scaleDenom)*c.width, (3.5/scaleDenom)*c.height);
+                ctx.fillText(parseInt(0.5*tempMaxNum).toString().padStart(3," "),(0.7/scaleDenom)*c.width, (3.5/scaleDenom)*c.height);
+                ctx.lineTo((1.5/scaleDenom)*c.width, (3.5/scaleDenom)*c.height);
+                ctx.lineTo((1.5/scaleDenom)*c.width, (5/scaleDenom)*c.height);
+
+                ctx.moveTo((1.3/scaleDenom)*c.width, (5/scaleDenom)*c.height);
+                ctx.fillText('0'.toString().padStart(3," "),(0.7/scaleDenom)*c.width, (5/scaleDenom)*c.height);
+                ctx.lineTo((1.5/scaleDenom)*c.width, (5/scaleDenom)*c.height);
+                ctx.lineTo((1.5/scaleDenom)*c.width, (6.5/scaleDenom)*c.height);
+
+                ctx.moveTo((1.3/scaleDenom)*c.width, (6.5/scaleDenom)*c.height);
+                ctx.fillText(parseInt(-0.5*tempMaxNum).toString().padStart(3," "),(0.7/scaleDenom)*c.width, (6.5/scaleDenom)*c.height);
+                ctx.lineTo((1.5/scaleDenom)*c.width, (6.5/scaleDenom)*c.height);
+                ctx.lineTo((1.5/scaleDenom)*c.width, (8.2/scaleDenom)*c.height);
+                ctx.fillText(parseInt(len - maxPoints),(1.27/scaleDenom)*c.width, (8.7/scaleDenom)*c.height);
+                
+                ctx.moveTo((1.3/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+                ctx.fillText(parseInt(-tempMaxNum).toString().padStart(3," "),(0.7/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+
+                ctx.lineTo((3.83/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+
+                ctx.moveTo((3.83/scaleDenom)*c.width, (8.2/scaleDenom)*c.height);
+                ctx.fillText(len - maxPoints + parseInt(0.33*(maxPoints)),(3.6/scaleDenom)*c.width, (8.7/scaleDenom)*c.height);
+                ctx.lineTo((3.83/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+                ctx.lineTo((6.16/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+
+                ctx.moveTo((6.16/scaleDenom)*c.width, (8.2/scaleDenom)*c.height);
+                ctx.fillText(len - maxPoints + parseInt(0.66*(maxPoints)),(5.93/scaleDenom)*c.width, (8.7/scaleDenom)*c.height);
+                ctx.lineTo((6.16/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+                ctx.lineTo((8.5/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+                
+                ctx.moveTo((8.5/scaleDenom)*c.width, (8.2/scaleDenom)*c.height);
+                ctx.fillText(parseInt(len),(8.26/scaleDenom)*c.width, (8.7/scaleDenom)*c.height);
+                ctx.lineTo((8.5/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+
+                ctx.stroke();
+                for(var j = 0; j < lineGraphs; j++){
+                    var newMap;
+                    newMap = [...valueMaps[j]]
+                    // // c.style.width = c.style.width || c.width + 'px';
+                    // // c.style.height = c.style.height || c.height + 'px';
+
+                    // c.width = Math.ceil(c.width * scaleFactor);
+                    // c.height = Math.ceil(c.height * scaleFactor);
+                    // function animate(){
+                    
+                    ctx.beginPath();
+                    ctx.strokeStyle = colours[j][0];
+                    ctx.lineWidth = "0.2";
+                    timeline = newMap.length;
+                    ctx.moveTo((1.5/scaleDenom)*c.width, (5/scaleDenom)*c.height);
+                    ctx.lineWidth = "1";
+                    var scaleXAxis;
+                    var scaleYAxis;
+                    for(i = 0; i < timeline; i++){
+                        tempNum = newMap[i];
+                        scaleXAxis = i/timeline;
+                        scaleYAxis;
+                        scaleYAxis = tempNum/tempMaxNum;
+                        ctx.lineTo(c.width*((1.5 + (scaleXAxis*7))/scaleDenom), c.height*((2+((1-scaleYAxis)*3))/scaleDenom));
+                    }
+                    ctx.fillStyle = colours[j][0];
+                    ctx.fillText(Number(tempNum).toFixed(2),(8.6/scaleDenom)*c.width, (2+((1-scaleYAxis)*3))*c.height/scaleDenom);
+                    ctx.stroke();
+                    const grad=ctx.createLinearGradient(c.width*((1.5 + (scaleXAxis*7))/scaleDenom)
+                                                        , c.height*((2+((1-scaleYAxis)*3))/scaleDenom)
+                                                        , (8.5/scaleDenom)*c.width, (5/scaleDenom)*c.height);
+                    grad.addColorStop(0, colours[j][1]);
+                    grad.addColorStop(1, colours[j][2]); 
+                    // ctx.fillStyle = "rgba(255, 255, 255, 0.1)";
+                    ctx.fillStyle = grad;
+                    ctx.lineTo((8.5/scaleDenom)*c.width, (5/scaleDenom)*c.height);
+                    ctx.fill();
+                }
+                ctx.resetTransform();
+            }
+
+            var markerRocket = null;
+
             if (!!window.EventSource) {
                 var lastNum;
                 var thisNum = 0;
                 var maxNum = 0;
-                var graphMap = [];
+                // var graphMap = [];
                 var source = new EventSource('/');
                 setupMeters();
                 setupGraphs();
                 var newMap = [];
-                
+                var mapData = new Map();
+                var mapMax = new Map();
+                var StoredData = [];
+                var count = 0;
             // var ctx = c.getContext("2d");
                 // ctx.translate(c.width/2, c.height - 1/10*c.height);
 
                 source.onmessage = function(e){
-                    if(newMap.length === 500){
-                        newMap.shift();
+                    mapData = new Map();
+                    count = 0;
+                    // console.log(e);
+                    var data = e.data;
+                    var nextBreak;
+                    
+                    while((nextBreak = data.indexOf(',')) !== -1){
+                        let dataToAdd = Number(data.substring(0,nextBreak));
+                        mapData.set(packetVals[count], dataToAdd);
+                        if(mapMax.get(packetVals[count]) === undefined|| dataToAdd > mapMax.get(packetVals[count])){
+                            mapMax.set(packetVals[count], dataToAdd);
+                        }
+                        data = data.substring(nextBreak+1);
+                        count++;
                     }
-                    if(e.data != null){
-                        newMap.push(150 - e.data);
+                    if(StoredData.length === 500){
+                        StoredData.shift();
                     }
-                    else{
-                        newMap.push(0);
+                    StoredData.push(mapData);
+
+                    setupMsg();
+                    meterUpdate();
+                    graphUpdate();
+                    if(markerRocket !== null){
+                        markerRocket.setLatLng([mapData.get("GPS Latitude"),mapData.get("GPS Longitude")]).update();
+                        markerRocket.bindPopup("<b>Rocket Location:</b><br>Lat: " + mapData.get("GPS Latitude") +", Lng: " + mapData.get("GPS Longitude"));
                     }
-                    onMsg(e);
-                    meterUpdate(e);
-                    graphUpdate(e, newMap);
                 };
                 
             }
-    
-            var resizeArray = [1,2,3,4];
-            var newFunc = function (e) {
-                $("#resizable1").mouseover(function(){
-                    if(!inUse){
-                        $("#resizable1").dlResizeable();
-                    }
-                });
-                $("#resizable2").mouseover(function(){
-                    if(!inUse){
-                        $("#resizable2").dlResizeable();
-                    }
-                });
-                $("#resizable3").mouseover(function(){
-                    if(!inUse){
-                        $("#resizable3").dlResizeable();
-                    }
-                });
-                $("#resizable4").mouseover(function(){
-                    if(!inUse){
-                        $("#resizable4").dlResizeable();
-                    }
-                });
-            }
-    
-            var inUse = false;
-            (function ($) {
-    
-                var parentOffset,
-                    item,
-                    overRight = false,
-                    overBelow = false,
-                    overLeft = false,
-                    overAbove = false,
-                    overMiddle = false,
-                    newWidth,
-                    newHeight,
-                    beingDragged = false,
-                    draggedRight = false,
-                    draggedBelow = false,
-                    draggedLeft = false,
-                    draggedAbove = false,
-                    draggedFull = false;
-    
-                $.fn.dlResizeable = function( options ) {
-                    item = this;
-                    var initPageX = null;
-                    var initPageY = null;
-                    $(document).mousedown(function (e) {
-                        inUse = true;
-                        newWidth = parentOffset.relX - item.outerWidth();
-                        newHeight = parentOffset.relY - item.outerHeight();
-                        draggedAbove = overAbove;
-                        draggedBelow = overBelow;
-                        draggedLeft = overLeft;
-                        draggedRight = overRight;
-                        draggedFull = overMiddle;
-                        beingDragged = true;
-                        if(overRight && overBelow){
-                            item.css("cursor", "se-resize");
-                        }
-                        else if(overLeft && overBelow){
-                            item.css("cursor", "sw-resize");
-                        }
-                        else if(overRight && overAbove){
-                            item.css("cursor", "ne-resize");
-                        }
-                        else if(overLeft && overAbove){
-                            item.css("cursor", "nw-resize");
-                        }
-                        else if(overAbove || overBelow){
-                            item.css("cursor", "ns-resize");
-                        }
-                        else if(overLeft || overRight){
-                            item.css("cursor", "ew-resize");
-                        }
-                        else if(overMiddle){
-                            item.css("cursor", "move");
-                        }
-                        else{
-                            beingDragged = false;
-                        }
-                    });
-    
-                    $(document).mouseup( function (e) {
-                        inUse = false;
-                        beingDragged = false;
-                        item.css("cursor", "default");
-                        draggedAbove = false;
-                        draggedLeft = false;
-                        draggedRight = false;
-                        draggedBelow = false;
-                        draggedFull = false;
-                        initPageX = null;
-                        initPageY = null;
-                    });
-    
-                    $(document).mousemove( function (e) {
-                        parentOffset = item.offset();
-                        var relX = e.pageX - parentOffset.left;
-                        var relY = e.pageY - parentOffset.top;
-                        var widthToAdd = 0;
-                        var right = relX >= item.outerWidth() - 8 && relX <= $(item).outerWidth();
-                        var bottom = relY >= item.outerHeight() - 8 && relY <= $(item).outerHeight();
-                        var left = relX >= 0 && relX <= 8;
-                        var top = relY >= 0 && relY <= 8;
-                        var middle = relX < item.outerWidth() - 8 && relX > 8 && relY < item.outerHeight() - 8 && relY > 8;
-                        overAbove = top;
-                        overBelow = bottom;
-                        overLeft = left;
-                        overRight = right;
-                        overMiddle = middle;
-                        if(!beingDragged){
-                            if(overRight && overBelow){
-                                item.css("cursor", "se-resize");
-                            }
-                            else if(overLeft && overBelow){
-                                item.css("cursor", "sw-resize");
-                            }
-                            else if(overRight && overAbove){
-                                item.css("cursor", "ne-resize");
-                            }
-                            else if(overLeft && overAbove){
-                                item.css("cursor", "nw-resize");
-                            }
-                            else if(overAbove || overBelow){
-                                item.css("cursor", "ns-resize");
-                            }
-                            else if(overLeft || overRight){
-                                item.css("cursor", "ew-resize");
-                            }
-                            else if(overMiddle){
-                                item.css("cursor", "move");
-                            }
-                            else {
-                                item.css("cursor", "default");
-                            }
-                        }
-                        if(draggedFull){
-                            if(initPageX == null){
-                                initPageX = relX;
-                            }
-                            if(initPageY == null){
-                                initPageY = relY;
-                            }
-                            newWidth = relX;
-                            if(newWidth + item.offset().left > 0){
-                                item.offset({top:item.offset().top, left:item.offset().left + newWidth - initPageX})
-                            }
-                            newHeight = relY;
-                            if(newHeight + item.offset().top > 0){
-                                item.offset({top:item.offset().top + newHeight - initPageY, left:item.offset().left})
-                            }
-                        }
-                        else if(draggedLeft && draggedBelow){
-                            newWidth = relX;
-                            if(newWidth + item.offset().left > 0){
-                                item.offset({top:item.offset().top, left:item.offset().left + newWidth})
-                                item.width(item.width() - newWidth);
-                            }
-                            newHeight = relY - item.outerHeight();
-                            item.height(item.outerHeight() + newHeight);
-                        }
-                        else if(draggedRight && draggedBelow){
-                            newWidth = relX - item.outerWidth();
-                            item.width(item.outerWidth() + newWidth);
-                            newHeight = relY - item.outerHeight();
-                            item.height(item.outerHeight() + newHeight);
-                        }
-                        else if(draggedLeft && draggedAbove){
-                            newWidth = relX;
-                            if(newWidth + item.offset().left > 0){
-                                item.offset({top:item.offset().top, left:item.offset().left + newWidth})
-                                item.width(item.width() - newWidth);
-                            }
-                            newHeight = relY;
-                            if(newHeight + item.offset().top > 0){
-                                item.offset({top:item.offset().top + newHeight, left:item.offset().left})
-                                item.height(item.height() - newHeight);
-                            }
-                            // item.height(item.outerHeight() + newHeight);
-                        }
-                        else if(draggedRight && draggedAbove){
-                            newWidth = relX - item.outerWidth();
-                            item.width(item.outerWidth() + newWidth);
-                            newHeight = relY;
-                            if(newHeight + item.offset().top > 0){
-                                item.offset({top:item.offset().top + newHeight, left:item.offset().left})
-                                item.height(item.height() - newHeight);
-                            }
-                            // item.height(item.outerHeight() + newHeight);
-                        }
-                        else if (draggedAbove) {
-                            newHeight = relY;
-                            if(newHeight + item.offset().top > 0){
-                                item.offset({top:item.offset().top + newHeight, left:item.offset().left})
-                                item.height(item.height() - newHeight);
-                            }
-                        }
-                        else if (draggedLeft){
-                            newWidth = relX;
-                            if(newWidth + item.offset().left > 0){
-                                item.offset({top:item.offset().top, left:item.offset().left + newWidth})
-                                item.width(item.width() - newWidth);
-                            }
-                        }
-                        else if (draggedRight) {
-                            newWidth = relX - item.outerWidth();
-                            item.width(item.outerWidth() + newWidth);
-                        }
-                        else if(draggedBelow){
-                            newHeight = relY - item.outerHeight();
-                            item.height(item.outerHeight() + newHeight);
-                        }
-                    });
-    
-                    return this;
-                }
-    
-            }(jQuery));
-    
-            $(document).ready(function(e){
-                sidebarWidth();
-                newFunc(e);
-                // newarr = [...resizeArray];
-                // newarr.reverse();
-                // for(var j = 0; j < newarr.length; j ++){
-                //     var i = newarr[j];
-                //     item = $("#resizable"+(i).toString());
-                //     topVal = item.offset().top
-                //     left = item.offset().left
-                //     item.css("position","absolute");
-                //     $("#resizable"+(i).toString()).offset({top:topVal, left:left});
-                // }
-                
-                document.getElementById("addResizable").addEventListener("click",() => {
-                    var newDivVal = Math.max(...resizeArray) + 1;
-                    resizeArray.push(newDivVal);
-    
-                    var htmlToInsert = '<div id = "resizable' 
-                        + newDivVal 
-                        + '" class="resizable"><div id="data'
-                        + newDivVal
-                        + '" class="data"></div></div>'
-    
-                    document.getElementById("resizableContainer").insertAdjacentHTML('beforeend',htmlToInsert);
-    
-                    var str = newFunc.toString().replace(/\s/g,'');
-                    var strlen = str.length;
-                    var start = str.indexOf('{');
-                    str = str.substring(start+1,strlen-1);
-                    str = str + '$("#resizable' 
-                    + newDivVal 
-                    +'").mouseover(function(){if(!inUse){$("#resizable' 
-                    + newDivVal 
-                    + '").dlResizeable();}});';
-                    newFunc = new Function('e',str);
-                    newFunc(e);
-    
-                    str = onMsg.toString().replace(/\s/g,'');
-                    strlen = str.length;
-                    start = str.indexOf('{');
-                    str = str.substring(start+1,strlen-1);
-                    str = str + '$("#data' 
-                    + newDivVal 
-                    +'").text(thisNum);';
-                    onMsg = new Function('e',str);
-                });
+            var map;
+            var bluemarker = L.icon({
+                iconUrl: '/static/logos/pin.png',
+                shadowUrl: '/static/logos/pin.png',
 
-                document.getElementById("addMeter").addEventListener("click",() => {
-                    var newDivVal = Math.max(...resizeArray) + 1;
-                    resizeArray.push(newDivVal);
-    
-                    var htmlToInsert = '<div id = "resizable' 
-                        + newDivVal 
-                        + '" class="resizable meter"><canvas id="meter'
-                        + newDivVal
-                        + '" style="width: 80%;top:10%;left:10%"></canvas></div>'
-    
-                    document.getElementById("resizableContainer").insertAdjacentHTML('beforeend',htmlToInsert);
-    
-                    var str = newFunc.toString().replace(/\s/g,'');
-                    var strlen = str.length;
-                    var start = str.indexOf('{');
-                    str = str.substring(start+1,strlen-1);
-                    str = str + '$("#resizable' 
-                    + newDivVal 
-                    +'").mouseover(function(){if(!inUse){$("#resizable' 
-                    + newDivVal 
-                    + '").dlResizeable();}});';
-                    newFunc = new Function('e',str);
-                    newFunc(e);
-    
-                    scaleCanvas("meter" + newDivVal);
-                    
-                    str = meterUpdate.toString().replace(/\s/g,'');
-                    strlen = str.length;
-                    start = str.indexOf('{');
-                    str = str.substring(start+1,strlen-1);
-                    str = str + 'animateMeter("meter' 
-                    + newDivVal 
-                    +'", 150);';
-                    meterUpdate = new Function('e',str);
-                    meterUpdate(e);
+                iconSize:     [25, 25], // size of the icon
+                shadowSize:   [0, 0], // size of the shadow
+                iconAnchor:   [12, 22], // point of the icon which will correspond to marker's location
+                shadowAnchor: [0, 0],  // the same for the shadow
+                popupAnchor:  [0, 0] // point from which the popup should open relative to the iconAnchor
+            });
+
+            var rocketPointer = L.icon({
+                iconUrl: '/static/logos/rocketPointer.png',
+                shadowUrl: '/static/logos/rocketPointer.png',
+
+                iconSize:     [25, 25], // size of the icon
+                shadowSize:   [0, 0], // size of the shadow
+                iconAnchor:   [12, 22], // point of the icon which will correspond to marker's location
+                shadowAnchor: [0, 0],  // the same for the shadow
+                popupAnchor:  [0, 0] // point from which the popup should open relative to the iconAnchor
+            });
+            navigator.geolocation.getCurrentPosition(function (position) {
+                map = L.map('map', { center: [position.coords.latitude , position.coords.longitude], zoom: 14});
+                var tile_layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 });
-            });       
- 
+                tile_layer.addTo(map);
+                var marker = L.marker([position.coords.latitude,position.coords.longitude],{icon: bluemarker}).addTo(map);
+                markerRocket = L.marker([position.coords.latitude,position.coords.longitude],{icon: rocketPointer}).addTo(map);
+                tile_layer.on("load",function() { 
+                    if(document.getElementById('loadingRocket')!=null){
+                    document.getElementById('loadingRocket').style.animation += ', fade 0.5s forwards ease-out';
+                    setTimeout(() => {
+                            document.getElementById('loadingRocket').remove();
+                            var loader = document.getElementById("loader");
+                            loader.style.animation = 'fade 1s forwards ease-out';
+                            setTimeout(() => {
+                                document.getElementById("loader").remove()
+                            }, 1100); 
+                        },700);
+                    };
+                });
+                marker.bindPopup("<b>Your Location:</b><br>Lat: " + position.coords.latitude +", Lng: " + position.coords.longitude);
+                markerRocket.bindPopup("<b>Rocket Location:</b><br>Lat: " + position.coords.latitude +", Lng: " + position.coords.longitude);
+            },
+            function (error){
+                map = L.map("map", { center: [51.450584 , -2.5946832], zoom: 12, zoomControl: false });
+                var tile_layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    maxZoom: 19,
+                    attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
+                });
+                tile_layer.addTo(map);
+                tile_layer.on("load",function() { 
+                    if(document.getElementById('loadingRocket')!=null){
+                    document.getElementById('loadingRocket').style.animation += ', fade 0.5s forwards ease-out';
+                    setTimeout(() => {
+                            document.getElementById('loadingRocket').remove();
+                            var loader = document.getElementById("loader");
+                            loader.style.animation = 'fade 1s forwards ease-out';
+                            setTimeout(() => {
+                                document.getElementById("loader").remove()
+                            }, 1100); 
+                        },700);
+                    };
+                });
+            });
+            
         </script>
-    </div>
-    
+        <script>
+            var interval = 1000;
+            function showTime() {
+                const timeNow = new Date().getHours().toString().padStart(2,"0") + ':' + new Date().getMinutes().toString().padStart(2,"0");
+                if(document.getElementById('clock').textContent !== "" 
+                    &&document.getElementById('clock').textContent !== timeNow 
+                    && interval === 1000){
+                    interval = 60000;
+                    modifyInterval();
+                }
+                document.getElementById('clock').textContent = timeNow;
+            }
+            // var interval = 1000;
+            var newInterval = setInterval(showTime,interval);
 
-    <script>
-        function animateButton(x){
-            x.classList.toggle("showing");
-            document.getElementById("plus").classList.toggle("cross");
-            var mtr = document.getElementById("addMeter");
-            var res = document.getElementById("addResizable");
-            mtr.classList.toggle("option_valid");
-            res.classList.toggle("option_valid");
-            mtr.classList.toggle("option_invalid");
-            res.classList.toggle("option_invalid");
-            if(mtr.classList.contains("hide")){
-                setTimeout(function(){mtr.classList.toggle("hide")},100);
-                setTimeout(function(){res.classList.toggle("hide")},100);
-                setTimeout(function(){mtr.classList.toggle("hover_valid")},200);
-                setTimeout(function(){res.classList.toggle("hover_valid")},200);
+            function modifyInterval(){
+                clearInterval(newInterval);
+                setInterval(showTime,interval);
             }
-            else{
-                mtr.classList.toggle("hover_valid");
-                setTimeout(function(){mtr.classList.toggle("hide")},400);
-                res.classList.toggle("hover_valid");
-                setTimeout(function(){res.classList.toggle("hide")},400);
-            }
-            // setTimeout(function(){mtr.classList.toggle("hover_valid")},200);
-        }
-    </script>
-    
-</body>
+        </script>
+        </div>
+    </body>
+</html>
