@@ -1462,7 +1462,7 @@
                 var ancestorDataId = ancestorNode.children[0].id;
                 var str;
                 if(ancestorDataId.includes('data')){
-                    str = setupMsg.toString().replace(/\s/g,'');
+                    str = setupMsg.toString();
                     strlen = str.length;
                     start = str.indexOf('{');
                     str = str.substring(start+1,strlen-1);
@@ -1476,7 +1476,7 @@
                     setupMsg = new Function(str);
                 }
                 else if(ancestorDataId.includes('meter')){
-                    str = meterUpdate.toString().replace(/\s/g,'');
+                    str = meterUpdate.toString();
                     strlen = str.length;
                     start = str.indexOf('{');
                     str = str.substring(start+1,strlen-1);
@@ -1485,12 +1485,14 @@
                         var startIndex = str.lastIndexOf(";",dataIndex) + 1;
                         var endIndex = str.indexOf(";",dataIndex) + 1;
                         var substringToRemove = str.substring(startIndex, endIndex);
+                        console.log(substringToRemove);
                         str = str.replace(substringToRemove,"");  
                     }
                     meterUpdate = new Function(str);
+                    console.log(meterUpdate.toString());
                 }
                 else if(ancestorDataId.includes('graph')){
-                    str = graphUpdate.toString().replace(/\s/g,'');
+                    str = graphUpdate.toString();
                     strlen = str.length;
                     start = str.indexOf('{');
                     str = str.substring(start+1,strlen-1);
@@ -1680,15 +1682,18 @@
                 // if(document.getElementById('map') != null){
                 //     document.getElementById('map').style.height = $("#" + document.getElementById('map').parentNode.id).innerHeight() + 'px';
                 // }
+                map.off();
+                map.remove();
                 navigator.geolocation.getCurrentPosition(function (position) {
-                    var map = L.map('map', { center: [position.coords.latitude , position.coords.longitude], zoom: 16});
+                    map = L.map('map', { center: [position.coords.latitude , position.coords.longitude], zoom: 13});
                     var tile_layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 19,
                         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                     });
                     tile_layer.addTo(map);
                     var marker = L.marker([position.coords.latitude,position.coords.longitude],{icon: bluemarker}).addTo(map);
-                    markerRocket = L.marker([mapData.get("GPS Latitude", mapData.get("GPS Longitude"))],{icon: rocketPointer}).addTo(map);
+                    marker.bindPopup("<b>Your Location:</b><br>Lat: " + position.coords.latitude +", Lng: " + position.coords.longitude);
+                    markerRocket = L.marker([mapData.get("GPS Latitude"), mapData.get("GPS Longitude")],{icon: rocketPointer}).addTo(map);
                     markerRocket.bindPopup("<b>Rocket Location:</b><br>Lat: " + mapData.get("GPS Latitude") +", Lng: " + mapData.get("GPS Longitude"));
                     // tile_layer.on("load",function() { 
                     //     if(document.getElementById('loadingRocket')!=null){
@@ -1706,7 +1711,7 @@
 
                 },
                 function (error){
-                    var map = L.map("map", { center: [51.450584 , -2.5946832], zoom: 12, zoomControl: false });
+                    map = L.map("map", { center: [51.450584 , -2.5946832], zoom: 12, zoomControl: false });
                     var tile_layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 19,
                         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -2277,7 +2282,7 @@
                 popupAnchor:  [0, 0] // point from which the popup should open relative to the iconAnchor
             });
             navigator.geolocation.getCurrentPosition(function (position) {
-                map = L.map('map', { center: [position.coords.latitude , position.coords.longitude], zoom: 14});
+                map = L.map('map', { center: [position.coords.latitude , position.coords.longitude], zoom: 13});
                 var tile_layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
                     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
