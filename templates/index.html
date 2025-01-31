@@ -1683,7 +1683,7 @@
                 //     document.getElementById('map').style.height = $("#" + document.getElementById('map').parentNode.id).innerHeight() + 'px';
                 // }
                 map.off();
-                map.remove();
+                // map.remove();
                 navigator.geolocation.getCurrentPosition(function (position) {
                     map = L.map('map', { center: [position.coords.latitude , position.coords.longitude], zoom: 13});
                     var tile_layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
@@ -1791,7 +1791,14 @@
                     newDiv.style.justifyContent = 'space-between';
                     for(var j = 3*i; j < Math.min(values.length, 3*(i+1)); j++){
                         var smallDiv = document.createElement('div');
-                        smallDiv.innerHTML = `<span style="font-size:12px;white-space:nowrap;overflow:hidden;width:50%;">`+values[j]+`</span><br>` + mapData.get(name);
+                        var val = mapData.get(values[j]);
+                        if(val > 0){
+                            val = mapData.get(values[j]).toString().padStart(6,"0");
+                        }
+                        else{
+                            val = "-" + Math.abs(mapData.get(values[j])).toString().padStart(6,"0");
+                        }
+                        smallDiv.innerHTML = `<span style="font-size:12px;white-space:nowrap;overflow:hidden;width:50%;">`+values[j]+`</span><br>` + mapData.get(values[j]).toString().padStart(3,"0");
                         smallDiv.style.width = '30%';
                         smallDiv.style.overflow = 'hidden';
                         smallDiv.style.padding = '2px';
@@ -1859,7 +1866,10 @@
                 var textInteger = parseInt(e);
                 var textDecimal = ((e - textInteger).toFixed(2)).toString().substring(1);
                 textInteger = textInteger.toString().padStart(3," ");
-                ctx.fillText(textInteger+textDecimal,-30,0);
+                ctx.font = "8px SpaceMono";
+                ctx.fillText(Name,-5.25*(Name.toString().length/2),-20);
+                ctx.font = "15px SpaceMono";
+                ctx.fillText(textInteger+textDecimal,-10*((textInteger+textDecimal).toString().length/2),0);
                 var piDiv = 120;
                 var numBlocks = Math.floor(parseInt(e)*piDiv/maxVal);
                 for(var i = 0; i <= numBlocks; i ++){
@@ -1985,7 +1995,9 @@
                 ctx = c.getContext("2d");
                 ctx.clearRect(0, 0, c.width, c.height);
                 ctx.scale(scaleFactor, scaleFactor);
-                
+                var scaleDenom = scaleFactor * 10;
+                ctx.font = "7px SpaceMono";
+                ctx.fillStyle = 'white';
                 var colours = [];
                 for(var j = 0; j < lineGraphs; j++){
                     colours.push(
@@ -1993,12 +2005,15 @@
                         "rgba("+ defaultColours[j][0] +","+ defaultColours[j][1] +","+ defaultColours[j][2] +",0.1)", 
                         "rgba("+ defaultColours[j][0] +","+ defaultColours[j][1] +","+ defaultColours[j][2] +",0.05)"]
                     );
+                    ctx.beginPath();
+                    ctx.strokeStyle = colours[j][0];
+                    ctx.moveTo(((1 + j*(8/lineGraphs))/scaleDenom)*c.width, (9.2/scaleDenom)*c.height);
+                    ctx.lineTo(((1 + j*(8/lineGraphs) + 0.3)/scaleDenom)*c.width, (9.2/scaleDenom)*c.height);
+                    ctx.fillText(names[j].substring(0,Math.min(36/lineGraphs,names[j].length)),((1 + j*(8/lineGraphs) + 0.4)/scaleDenom)*c.width, (9.4/scaleDenom)*c.height);
+                    ctx.stroke();
                 }
-                ctx.beginPath();
                 ctx.strokeStyle = "#ffffff";
-                var scaleDenom = scaleFactor * 10;
-                ctx.font = "7px SpaceMono";
-                ctx.fillStyle = 'white';
+                ctx.beginPath();
                 ctx.moveTo((1.3/scaleDenom)*c.width, (2/scaleDenom)*c.height);
                 ctx.fillText(parseInt(tempMaxNum).toString().padStart(3," "),(0.7/scaleDenom)*c.width, (2/scaleDenom)*c.height);
                 ctx.lineTo((1.5/scaleDenom)*c.width, (2/scaleDenom)*c.height);
@@ -2033,6 +2048,7 @@
                 ctx.moveTo((8.5/scaleDenom)*c.width, (8.2/scaleDenom)*c.height);
                 ctx.fillText(parseInt(len),(8.26/scaleDenom)*c.width, (8.7/scaleDenom)*c.height);
                 ctx.lineTo((8.5/scaleDenom)*c.width, (8/scaleDenom)*c.height);
+
 
                 ctx.stroke();
                 for(var j = 0; j < lineGraphs; j++){
@@ -2114,7 +2130,9 @@
                 ctx = c.getContext("2d");
                 ctx.clearRect(0, 0, c.width, c.height);
                 ctx.scale(scaleFactor, scaleFactor);
-                
+                var scaleDenom = scaleFactor * 10;
+                ctx.font = "7px SpaceMono";
+                ctx.fillStyle = 'white';
                 var colours = [];
                 for(var j = 0; j < lineGraphs; j++){
                     colours.push(
@@ -2122,12 +2140,15 @@
                         "rgba("+ defaultColours[j][0] +","+ defaultColours[j][1] +","+ defaultColours[j][2] +",0.1)", 
                         "rgba("+ defaultColours[j][0] +","+ defaultColours[j][1] +","+ defaultColours[j][2] +",0.05)"]
                     );
+                    ctx.beginPath();
+                    ctx.strokeStyle = colours[j][0];
+                    ctx.moveTo(((1 + j*(8/lineGraphs))/scaleDenom)*c.width, (9.2/scaleDenom)*c.height);
+                    ctx.lineTo(((1 + j*(8/lineGraphs) + 0.3)/scaleDenom)*c.width, (9.2/scaleDenom)*c.height);
+                    ctx.fillText(names[j].substring(0,Math.min(36/lineGraphs,names[j].length)),((1 + j*(8/lineGraphs) + 0.4)/scaleDenom)*c.width, (9.4/scaleDenom)*c.height);
+                    ctx.stroke();
                 }
                 ctx.beginPath();
                 ctx.strokeStyle = "#ffffff";
-                var scaleDenom = scaleFactor * 10;
-                ctx.font = "7px SpaceMono";
-                ctx.fillStyle = 'white';
                 ctx.moveTo((1.3/scaleDenom)*c.width, (2/scaleDenom)*c.height);
                 ctx.fillText(parseInt(tempMaxNum).toString().padStart(3," "),(0.7/scaleDenom)*c.width, (2/scaleDenom)*c.height);
                 ctx.lineTo((1.5/scaleDenom)*c.width, (2/scaleDenom)*c.height);
