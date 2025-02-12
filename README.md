@@ -1,5 +1,5 @@
 # Hermes v1.0
- Prototype telemtry GUI, still under development
+ Prototype telemetry GUI, still under development
 
 ### GUI in action
 
