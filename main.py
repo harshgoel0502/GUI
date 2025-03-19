@@ -29,11 +29,17 @@ from rich.text import Text
 from rich.markdown import Markdown
 from collections import deque
 
-import socketio
-from flask import Flask
+from flask import Flask, redirect, request, Response, url_for, render_template
+from queue import Queue
 
 import threading
 import random
+
+
+app = Flask(__name__, template_folder='templates')
+
+data_queue = Queue()
+
 
 VERSION = "snapshot-20221013a"
 DEBUG = (socket.gethostname() != "endeavour-ground")
@@ -69,22 +75,24 @@ def echo(text, file=None, nl=None, err=None, color=None, **styles):
 click.echo = echo
 click.secho = secho
 
-app = Flask(__name__)
-sio = socketio.Server(cors_allowed_origins="*")
-app.wsgi_app = socketio.WSGIApp(sio, app.wsgi_app)
+radio = DarwinGroundPeer.DarwinGroundPeer(cons, 433, name="TEST", is_debug=1)
 
-@sio.on('connect')
-def connect(sid, environ):
-    print(f"Client connected: {sid}")
+@app.route('/')
+def test():
+    if request.headers.get('accept') == 'text/event-stream':
+        print("Request for event stream")
+        def events():
+            while True:
+                data = radio.listen_packets()
+                if data is not None:
+                    yield f"data: {data}\n\n"
+        return Response(events(), content_type='text/event-stream')
+    return render_template('index.html')
 
-@sio.on('disconnect')
-def disconnect(sid):
-    print(f"Client disconnected: {sid}")
-
-def run_index():
-    shell = str(os.environ['SHELL'])
-    shell = shell[shell.rfind("/")+1:]
-    os.system(f"lxterminal -e '{shell} -c \"pwd; python3 ~/GUI/index.py; {shell}\" '")
+# def run_index():
+#     shell = str(os.environ['SHELL'])
+#     shell = shell[shell.rfind("/")+1:]
+#     os.system(f"lxterminal -e '{shell} -c \"pwd; python3 ~/GUI/index.py; {shell}\" '")
 
 def main():
     with cons.status("Starting Test Ground Station...", spinner="earth"):
@@ -102,7 +110,6 @@ def main():
 
         debug_mode = int(args.debugMode)
 
-
         radio = DarwinGroundPeer.DarwinGroundPeer(cons, frequency, name="TEST", is_debug=debug_mode)
 
     setup = Prompt.ask("[bold red]Start Set up phase?", choices=["y", "n"])
@@ -114,8 +121,8 @@ def main():
         cons.rule("[bold blue]Listening for Packets.")
         with cons.status(f"[bold white]Searching for rocket on {frequency} mHz... ", spinner="arc"):
             if not debug_mode: 
-                threading.Thread(target = radio.listen_packets, daemon=True).start()
-                app.run(host='0.0.0.0', port=5000)
+                # threading.Thread(target = radio.listen_packets, daemon=True).start()
+                app.run(host='0.0.0.0', port=8000)
         time.sleep(1)
             
 

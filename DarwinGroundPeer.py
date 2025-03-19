@@ -13,8 +13,6 @@ from rich.prompt import Prompt
 from rich.prompt import Confirm
 
 from threading import Thread, Lock
-from main import sio, run_index
-import socketio
 
 flight_states = ["INITIALIZING", "READY", "BOOSTING", "COASTING", "APOGEE", "DESCENT", "LANDING", "DONE"]
 packet_types = ["", "state", "acc"]
@@ -29,6 +27,8 @@ ready_signal = 0x61
 
 mutex = Lock()
 send_signal = False
+
+data_packet = ("0," * 30)[:-1]
 
 try: 
     import digitalio
@@ -319,9 +319,6 @@ class DarwinGroundPeer:
             self.console.log(packet)
     
     def listen_packets(self):
-        if self.GUI:
-            run_index()
-            
         while True : 
             self.console.log("Waiting for radio packet...")
             #txt = self.console.export_text()
@@ -342,10 +339,7 @@ class DarwinGroundPeer:
                 #     self.console.log(f"Invalid packet type: {int(packet[1])}")
                 decoded = packet[1:].decode("ascii")
                 self.console.log(decoded)
-
-                if(self.GUI):
-                    sio.emit("rocket_data", decoded)
-                  
+                return (decoded + ",0,0,0,0")
             elif packet[0] != endeavour_pkt:
                 self.console.log(packet)
                 self.console.log("Received non Endeavour packet")
@@ -355,5 +349,7 @@ class DarwinGroundPeer:
             else:
                 self.console.log("Invalid packet")
                 self.console.log(packet)
+
+            return None
 
 
