@@ -83,7 +83,7 @@ def test():
         print("Request for event stream")
         def events():
             while True:
-                data = radio.listen_packets()
+                data = radio.listen_packets_GUI()
                 if data is not None:
                     yield f"data: {data}\n\n"
         return Response(events(), content_type='text/event-stream')
