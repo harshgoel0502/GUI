@@ -63,6 +63,17 @@ class DarwinGroundPeer:
         self.connected = False
         self.GUI = False
 
+        self.no_packets = 0
+        self.ms_since_start = 0
+
+        self.gX, self.gY, self.gZ = 0, 0, 0
+        self.aX, self.aY, self.aZ = 0, 0, 0
+        self.mX, self.mY, self.mZ = 0, 0, 0
+        self.qX, self.qY, self.qZ, self.qW = 0, 0, 0, 0
+        self.imuTemp = 0
+        self.baroPress, self.aglAlt, self.baroTemp, self.baroVel = 0, 0, 0, 0
+        self.gpsLat, self.gpsLong, self.gpsAlt, self.gpsSats, self.gpsSpd, self.gpsHdg = 0, 0, 0, 0, 0, 0
+
         # Initialise other variables.
         self._l = logging.getLogger("DarwinGroundPeer")
         self.console = console
@@ -147,148 +158,8 @@ class DarwinGroundPeer:
         else:
             self.rfm9x.send(0xed.to_bytes(1, "little") + ("n").encode("ascii"))
             self.console.log("Failed to connect to rocket")
-            # elif packet[0] != self.rfm9x.node:
-            #     self.console.log("Received packet not addressed to us.")
-            #     self.console.log(self.rfm9x.node)
-            # elif packet[0] == self.rfm9x.node and packet[1] == rocket_addr and packet[4] == 237 :
-            #     self.console.log("Got init packet from radio")
-            #     connected = True
-            # elif connected and len(packet) != 5:
-            #     self.console.log("finished connecting")
-            #     return packet
-            # else:
-            #     self.console.log(packet)
+            self.connect()
 
-    def printIMU(self, packet):
-        #8 bytes in a double, want 6 doubles, dont want headers
-        if len(packet) != 48:
-            self.console.log(len(packet))
-            self.console.log("Invalid IMU packet")
-        else :
-            doubles = array.array('d', packet)
-            self.console.log("ax: " + str(doubles[0]) + " ay: " + str(doubles[1]) + " az: " + str(doubles[2]))
-            self.console.log("gx: " + str(doubles[3]) + " gy: " + str(doubles[4]) + " gz: " + str(doubles[5]))
-
-    def printBaro(self, packet):
-        #4 bytes in a float, want 6 doubles, dont want headers
-        if len(packet) != 24:
-            self.console.log(len(packet))
-            self.console.log("Invalid Baro packet")
-        else :
-            readings = array.array('f', packet)
-            self.console.log("temperature " + str(readings[0]) + " pressure : " + str(readings[1]))
-            self.console.log("temperature " + str(readings[2]) + " pressure : " + str(readings[3]))
-            self.console.log("temperature " + str(readings[4]) + " pressure : " + str(readings[5]))
-
-
-    def imu_loop(self, packet):
-        while True:
-            while packet is None:
-                packet = self.rfm9x.receive(with_ack=True)
-            try:
-                self.printIMU(packet[:48])
-                self.printIMU(packet[48:96])
-                self.printIMU(packet[96:])          
-            except Exception as e:
-                packet = None
-                self.console.log(packet)
-                self.console.log(e)
-            else:
-                return
-
-    def baro_loop(self, packet):
-        while True:
-            while packet is None:
-                packet = self.rfm9x.receive(with_ack=True)
-            try:
-                self.printBaro(packet)
-            except Exception as e:
-                packet = None
-                self.console.log(packet)
-                self.console.log(e)
-            else:
-                return
-
-    
-    def imu_set_up(self, packet):
-        while True:
-            try:
-                imu_init = packet[:3].decode("ascii")
-                self.console.log(imu_init)
-            except Exception as e:
-                self.console.log(e)
-                self.console.log(packet)
-                imu_init = "none"
-                packet = None
-            if imu_init == "YES":
-                self.console.log("IMU initialized") 
-                packet = self.rfm9x.receive(with_ack=True)
-                self.imu_loop(packet)
-            elif imu_init == "NOO":
-                self.console.log("IMU not initialised")
-            else :
-                self.console.log("invalid packet")
-                self.console.log(packet)
-            
-            if imu_init != "none":
-                ok = False
-                p = ""
-                while(not ok):
-                    p = Prompt.ask("IMU OK?", choices=["yes", "no"])
-                    password = Prompt.ask("Type in ok to confirm: ", password=True)
-                    if password == "ok":
-                        ok = True
-                        if p == "yes":
-                            self.rfm9x.send_with_ack(sensor_ok.to_bytes(1, 'little'))
-                            packet = self.rfm9x.receive(with_ack=True)
-                            return packet
-                        elif p == "no":
-                            self.rfm9x.send_with_ack(sensor_not_ok.to_bytes(1, 'little'))
-            packet = self.rfm9x.receive(with_ack=True)
-
-    def baro_set_up(self, packet):
-        while True:
-            try:
-                baro_init = packet[:3].decode("ascii")
-                self.console.log(baro_init)
-            except Exception as e:
-                self.console.log(e)
-                self.console.log(packet)
-                baro_init = "none"
-                packet = None
-            if baro_init == "YES":
-                self.console.log("Barometer initialized") 
-                packet = self.rfm9x.receive(with_ack=True)
-                self.baro_loop(packet)
-            elif baro_init == "NOO":
-                self.console.log("Barometer not initialised")
-            else :
-                self.console.log("invalid packet")
-                self.console.log(packet)
-            
-            if baro_init != "none":
-                ok = False
-                p = ""
-                while(not ok):
-                    p = Prompt.ask("BAROMETER OK?", choices=["yes", "no"])
-                    password = Prompt.ask("Type in ok to confirm: ", password=True)
-                    if password == "ok":
-                        ok = True
-                        if p == "yes":
-                            self.rfm9x.send_with_ack(sensor_ok.to_bytes(1, 'little'))
-                            packet = self.rfm9x.receive(with_ack=True)
-                            return packet
-                        elif p == "no":
-                            self.rfm9x.send_with_ack(sensor_not_ok.to_bytes(1, 'little'))
-            packet = self.rfm9x.receive(with_ack=True)
-
-
-     
-    #wait for sensor packets: IMU, Baro, GPS
-    def get_sensors(self, packet):
-        packet = self.imu_set_up(packet)
-        packet = self.baro_set_up(packet)
-         
     def setup(self):
         self.connect()
         # self.console.log("Waiting for message from rocket...")
@@ -299,26 +170,65 @@ class DarwinGroundPeer:
         # t2.start()
         # t1.join()
         # t2.join()
+    
+    def log(self, value, type):
+        self.console.log(type + ": " + value)
+        return value
 
              
-    def handle_endeavour_packet(self, payload, packet_type, packet):
-        if packet_types[packet_type] == "state":
-            if payload[0] < len(flight_states):
-                state = flight_states[payload[0]]
-                self.console.rule("[bold green]CURRENT STATE: " + state)
+    def handle_endeavour_packet(self, payload):
+        values = payload.split(",")
+        self.no_packets = self.log(values[0], "No. of packets")
+        self.ms_since_start = self.log(values[1], "Time since start")
+        self.gx, self.gy, self.gz = self.log(values[2:5], "Gyro")
+        self.ax, self.ay, self.az = self.log(values[5:8], "Accel")
+        self.mx, self.my, self.mz = self.log(values[8:11], "Mag")
+        self.qx, self.qy, self.qz, self.qw = self.log(values[11:15], "Quat")
+        self.imu_temp = self.log(values[15], "IMU Temp")
+        self.baro_press = self.log(values[16], "Pressure")
+        self.agl_alt = self.log(values[17], "Altitude")
+        self.baro_temp = self.log(values[18], "Temperature")
+        self.baro_vel = self.log(values[19], "Velocity")
+        self.gps_lat, self.gps_long = self.log(values[20:22], "GPS Coordinates:")
+        self.gps_alt = self.log(values[22], "GPS Altitude")
+        self.gps_sats = self.log(values[23], "GPS Sats")
+        self.gps_spd = self.log(values[24], "GPS Speed")
+        self.gps_hdg = self.log(values[25], "GPS")
 
-            else :
-                self.console.log(f"Invalid state: {payload[0]}")
-          
-        elif packet_types[packet_type] == "acc":
-            doubles = array.array('d', packet)
-            self.console.log("gx: " + str(doubles[0]) + " gy: " + str(doubles[1]) + " gz: " + str(doubles[2]))
-                
-        else:
-            self.console.log("hmmm")
-            self.console.log(packet)
     
     def listen_packets(self):
+        while True : 
+            self.console.log("Waiting for radio packet...")
+            #txt = self.console.export_text()
+            #f = open("test.txt", "a")
+            #f.write(txt)
+            #f.close()
+
+            packet = self.rfm9x.receive(with_header=False, timeout=5)
+
+            if packet is None:
+                self.console.log("No packet received, maybe another time...")
+                #continue
+
+            elif len(packet) > 2 and packet[0] == endeavour_pkt: # Want the Endeavour identifier, packet type and payload, 3 bytes min
+                # if packet[1] < len(packet_types):
+                #     self.handle_endeavour_packet(packet[2:], packet[1], packet)
+                # else:
+                #     self.console.log(f"Invalid packet type: {int(packet[1])}")
+                decoded = packet[1:].decode("ascii")
+                self.handle_endeavour_packet(decoded)
+
+            elif packet[0] != endeavour_pkt:
+                self.console.log(packet)
+                self.console.log("Received non Endeavour packet")
+            elif len(packet) <= 1:
+                self.console.log(packet)
+                self.console.log("Received no payload data")
+            else:
+                self.console.log("Invalid packet")
+                self.console.log(packet)
+        
+    def listen_packets_GUI(self):
         while True : 
             self.console.log("Waiting for radio packet...")
             #txt = self.console.export_text()

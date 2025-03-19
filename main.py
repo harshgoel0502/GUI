@@ -122,7 +122,10 @@ def main():
         with cons.status(f"[bold white]Searching for rocket on {frequency} mHz... ", spinner="arc"):
             if not debug_mode: 
                 # threading.Thread(target = radio.listen_packets, daemon=True).start()
-                app.run(host='0.0.0.0', port=8000)
+                if radio.GUI:
+                    app.run(host='0.0.0.0', port=8000)
+                else:
+                    radio.listen_packets()
         time.sleep(1)
             
 
