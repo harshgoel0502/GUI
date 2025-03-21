@@ -49,6 +49,34 @@ cons = Console(record=True)
 
 import os
 
+import subprocess
+import pickle
+
+# from cmd import Cmd
+
+# # Add this class after the existing imports
+# class GroundStationTerminal(Cmd):
+#     def __init__(self, radio):
+#         super().__init__()
+#         self.radio = radio
+#         self.prompt = 'Enter LoRa Packet > '
+#         self.intro = 'Send packets to the LoRa'
+
+#     def do_send(self, arg):
+#         if arg:
+#             self.radio.send_packet(arg)
+#             print(f"Sent message")
+#         else:
+#             print("Please provide a command to send")
+
+#     def do_quit(self, arg):
+#         """Exit the terminal"""
+#         return True
+
+# def start_command_terminal(radio):
+#     terminal = GroundStationTerminal(radio)
+#     terminal.cmdloop()
+
 
 logging.basicConfig(format='[%(asctime)s] %(levelname)s %(funcName)-18s   %(message)s', level=logging.DEBUG)
 logging.addLevelName(logging.WARNING, "\033[1;31m%s\033[1;0m " % logging.getLevelName(logging.WARNING))
@@ -94,6 +122,33 @@ def test():
 #     shell = shell[shell.rfind("/")+1:]
 #     os.system(f"lxterminal -e '{shell} -c \"pwd; python3 ~/GUI/index.py; {shell}\" '")
 
+
+def handle_terminal_commands(radio):
+    if not os.path.exists('/tmp/ground_station_pipe'):
+        os.mkfifo('/tmp/ground_station_pipe')
+    
+    while True:
+        with open('/tmp/ground_station_pipe', 'rb') as f:
+            try:
+                command = pickle.load(f)
+                # threading.Thread(target=radio.send_packet, args=(str(command),), daemon=True).start()
+                radio.send_packet(str(command))
+                print(f"Sent command: {command}")
+                # return
+            except EOFError:
+                continue
+            except Exception as e:
+                print(f"Error processing command: {e}")
+
+def launch_terminal():
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    terminal_script = os.path.join(script_dir, 'test.py')
+    try:
+        subprocess.Popen(['lxterminal', '-e', f'python3 {terminal_script}'])
+    except FileNotFoundError:
+        print("Could not find a suitable terminal emulator")
+
+
 def main():
     with cons.status("Starting Test Ground Station...", spinner="earth"):
         parser = argparse.ArgumentParser(description="Start the Darwin ground station receiver.")
@@ -112,11 +167,20 @@ def main():
 
         radio = DarwinGroundPeer.DarwinGroundPeer(cons, frequency, name="TEST", is_debug=debug_mode)
 
+    
+
     setup = Prompt.ask("[bold red]Start Set up phase?", choices=["y", "n"])
     if setup == 'y':
         cons.rule("[bold blue]Setting up Connection.")
         radio.setup()
         setup = 'n'
+
+    command_thread = threading.Thread(target=handle_terminal_commands, args=(radio,), daemon=True)
+    command_thread.start()
+
+    # Launch the terminal interface in a new window
+    launch_terminal()
+    
     while True: 
         cons.rule("[bold blue]Listening for Packets.")
         with cons.status(f"[bold white]Searching for rocket on {frequency} mHz... ", spinner="arc"):

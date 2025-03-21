@@ -147,6 +147,9 @@ class DarwinGroundPeer:
                 packet = self.rfm9x.receive(timeout=10)
             break
         conf = packet[1:].decode("ascii")
+        if not conf.startswith("LoRa Arm Command Received"):
+            self.connect()
+            return
         prmpt = Prompt.ask(conf, choices=["y", "n"])
         if prmpt == "y":
             prmpt = Prompt.ask("Launch GUI?", choices=["y", "n"])
@@ -155,6 +158,7 @@ class DarwinGroundPeer:
             self.connected = True
             if prmpt == "y":
                 self.GUI = True
+            
         else:
             self.rfm9x.send(0xed.to_bytes(1, "little") + ("n").encode("ascii"))
             self.console.log("Failed to connect to rocket")
@@ -237,6 +241,11 @@ class DarwinGroundPeer:
             #f.close()
 
             packet = self.rfm9x.receive(with_header=False, timeout=5)
+            
+            # if package is not None:
+            #     sent = self.rfm9x.send(0xed.to_bytes(1, "little") + (str(package).encode("ascii")))
+            #     while not sent:
+            #         sent = self.rfm9x.send(0xed.to_bytes(1, "little") + (str(package).encode("ascii")))
 
             if packet is None:
                 self.console.log("No packet received, maybe another time...")
@@ -247,9 +256,14 @@ class DarwinGroundPeer:
                 #     self.handle_endeavour_packet(packet[2:], packet[1], packet)
                 # else:
                 #     self.console.log(f"Invalid packet type: {int(packet[1])}")
-                decoded = packet[1:].decode("ascii")
+                packet_len = len(packet)
+                decoded = ""
+                i = 1
+                while i < packet_len:
+                    decoded += packet[i:i+4].decode("ascii") + ","
+                    i += 4
                 self.console.log(decoded)
-                return (decoded + ",0,0,0,0")
+                return (decoded + "0,0,0,0")
             elif packet[0] != endeavour_pkt:
                 self.console.log(packet)
                 self.console.log("Received non Endeavour packet")
@@ -261,5 +275,13 @@ class DarwinGroundPeer:
                 self.console.log(packet)
 
             return None
+    
+    def send_packet(self, package):
+        # print(0xed.to_bytes(1,"little") + ("DISARM").encode("ascii"))
+        sent = self.rfm9x.send(0xed.to_bytes(1,"little") + ("DISARM").encode("ascii"))
+        while not sent:
+            self.console.log("Package not sent")
+            sent = self.rfm9x.send(0xed.to_bytes(1,"little") + ("DISARM").encode("ascii"))
+        self.console.log(f"DarwinGroundPeer: Sent {package}")
 
 

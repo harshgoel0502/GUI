@@ -11,11 +11,31 @@
 # delta_time = np.diff(timestamp, prepend=timestamp[0])
 # print(delta_time)
 
+#!/usr/bin/python3.10
 
-import os
+from cmd import Cmd
+import sys
+import pickle
 
+class GroundStationTerminal(Cmd):
+    def __init__(self):
+        super().__init__()
+        self.prompt = 'Enter LoRa Packet > '
+        self.intro = 'Send packets to the LoRa'
 
-shell = str(os.environ['SHELL'])
-shell = shell[shell.rfind("/")+1:]
+    def do_send(self, arg):
+        if arg:
+            print(f"Sending: {arg}")
+            # Write command to the pipe
+            with open('/tmp/ground_station_pipe', 'wb') as f:
+                pickle.dump(arg, f)
+        else:
+            print("Please provide a command to send")
 
-os.system(f"lxterminal -e '{shell} -c \"pwd; python3 index.py; {shell}\" '")
+    def do_quit(self, arg):
+        """Exit the terminal"""
+        return True
+
+if __name__ == "__main__":
+    terminal = GroundStationTerminal()
+    terminal.cmdloop()
