@@ -275,6 +275,11 @@ input[type="checkbox"]{
   margin-right: 5px;
 }
 
+.reset_button{
+  margin-left: 5px;
+  margin-right: 5px;
+}
+
 .show_button{
   animation: reveal 0.5s forwards;
   display: block;

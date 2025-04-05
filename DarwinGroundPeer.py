@@ -9,6 +9,8 @@ from rich import print
 from rich.pretty import pprint
 from rich import inspect
 
+import struct
+
 from rich.prompt import Prompt
 from rich.prompt import Confirm
 
@@ -62,6 +64,7 @@ class DarwinGroundPeer:
         self.has_tx_window = False
         self.connected = False
         self.GUI = False
+        self.armed = False
 
         self.no_packets = 0
         self.ms_since_start = 0
@@ -179,8 +182,35 @@ class DarwinGroundPeer:
         self.console.log(type + ": " + value)
         return value
 
-             
     def handle_endeavour_packet(self, payload):
+        try:
+            self.console.log(payload.decode('ascii'))
+            if self.armed and payload.decode('ascii').startswith("UNARMED"):
+                self.armed = False
+            
+            if not self.armed:
+                return
+        except UnicodeDecodeError:
+            self.armed = True
+            values = []
+            i = 0
+            value = int.from_bytes(payload[i:i+8], byteorder='little', signed=True)
+            values.append(str(value))
+            i = 8
+            value = int.from_bytes(payload[i:i+4], byteorder='little', signed=True)
+            values.append(str(value))
+            i = 12
+            while i < len(payload):
+                if i + 4 <= len(payload):
+                    value = struct.unpack('f', payload[i:i+4])[0]
+                    values.append(str("{:.2f}".format(value)))
+                i += 4
+            
+            decoded = ",".join(values)
+            self.console.log(f"Decoded values: {decoded}")
+            return decoded + ",0,0,0"
+
+    def handle_endeavour_packet_old(self, payload):
         values = payload.split(",")
         self.no_packets = self.log(values[0], "No. of packets")
         self.ms_since_start = self.log(values[1], "Time since start")
@@ -219,7 +249,7 @@ class DarwinGroundPeer:
                 #     self.handle_endeavour_packet(packet[2:], packet[1], packet)
                 # else:
                 #     self.console.log(f"Invalid packet type: {int(packet[1])}")
-                decoded = packet[1:].decode("ascii")
+                decoded = packet[1:]
                 self.handle_endeavour_packet(decoded)
 
             elif packet[0] != endeavour_pkt:
@@ -232,8 +262,16 @@ class DarwinGroundPeer:
                 self.console.log("Invalid packet")
                 self.console.log(packet)
         
+    def launch_GUI(self):
+        if not self.GUI:
+            prmpt = Prompt.ask("Launch GUI?", choices=["y", "n"])
+            # self.rfm9x.send(0xed.to_bytes(1, "little") + ("y").encode("ascii"))
+            # self.console.log("Connected to rocket")
+            # self.connected = True
+            if prmpt == "y":
+                self.GUI = True
     def listen_packets_GUI(self):
-        while True : 
+        while True: 
             self.console.log("Waiting for radio packet...")
             #txt = self.console.export_text()
             #f = open("test.txt", "a")
@@ -256,14 +294,39 @@ class DarwinGroundPeer:
                 #     self.handle_endeavour_packet(packet[2:], packet[1], packet)
                 # else:
                 #     self.console.log(f"Invalid packet type: {int(packet[1])}")
-                packet_len = len(packet)
-                decoded = ""
-                i = 1
-                while i < packet_len:
-                    decoded += packet[i:i+4].decode("ascii") + ","
-                    i += 4
-                self.console.log(decoded)
-                return (decoded + "0,0,0,0")
+                payload = packet[1:]
+                try:
+                    self.console.log(payload.decode('ascii'))
+                    if self.armed and payload.decode('ascii').startswith("UNARMED"):
+                        self.armed = False
+                    
+                    if not self.armed:
+                        return
+                except UnicodeDecodeError:
+                    self.armed = True
+                    values = []
+                    i = 0
+                    value = int.from_bytes(payload[i:i+8], byteorder='little', signed=True)
+                    values.append(str(value))
+                    i = 8
+                    value = int.from_bytes(payload[i:i+4], byteorder='little', signed=True)
+                    values.append(str(value))
+                    i = 12
+                    while i < len(payload):
+                        if i + 4 <= len(payload):
+                            value = struct.unpack('f', payload[i:i+4])[0]
+                            values.append(str("{:.2f}".format(value)))
+                        i += 4
+                    
+                    decoded = ",".join(values)
+                    self.console.log(f"Decoded values: {decoded}")
+                    return decoded + ",0,0,0"
+                # i = 9
+                # while i < packet_len:
+                #     decoded += packet[i:i+4].decode("utf-8", "ignore") + ","
+                #     i += 4
+                # self.console.log(decoded)
+                # return (decoded + "0,0,0,0")
             elif packet[0] != endeavour_pkt:
                 self.console.log(packet)
                 self.console.log("Received non Endeavour packet")
@@ -273,15 +336,33 @@ class DarwinGroundPeer:
             else:
                 self.console.log("Invalid packet")
                 self.console.log(packet)
-
             return None
+        return None
     
     def send_packet(self, package):
+        # self.being_sent = True
         # print(0xed.to_bytes(1,"little") + ("DISARM").encode("ascii"))
-        sent = self.rfm9x.send(0xed.to_bytes(1,"little") + ("DISARM").encode("ascii"))
-        while not sent:
-            self.console.log("Package not sent")
-            sent = self.rfm9x.send(0xed.to_bytes(1,"little") + ("DISARM").encode("ascii"))
-        self.console.log(f"DarwinGroundPeer: Sent {package}")
+        disarmed = False
+        while not disarmed:
+            sent = self.rfm9x.send(0xed.to_bytes(1,"little") + (package).encode("ascii"))
+            if sent:
+                self.console.log(f"DarwinGroundPeer: Sent {package}")
+                packet = self.rfm9x.receive(with_header=False, timeout=2)
+                if packet is not None and len(packet) > 2 and packet[0] == endeavour_pkt:
+                    payload = packet[1:]
+                try:
+                    self.console.log(payload.decode('ascii'))
+                    if payload.decode('ascii').startswith("UNARMED"):
+                        disarmed = True
+                        self.armed = False
+                    return
+                except:
+                    continue
+            else:
+                self.console.log("Not Sent")
+            
+            # self.console.log("Package not rec")
+            # sent = self.rfm9x.send(0xed.to_bytes(1,"little") + (package).encode("ascii"))
+        # self.being_sent = False
 
 

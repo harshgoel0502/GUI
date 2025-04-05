@@ -40,6 +40,12 @@
                         <img src="/static/logos/double_graph.png" height="60%" style="top:20%;position: relative;">
                     </div>
                 </button>
+                <button id="resetValues" class="add_plus reset_button" style="font-size: 20px;font-family: SpaceMono;"
+                    onmouseenter="suggest('Reset Data')" onmouseleave="clearSuggestion()">
+                    <div style="height: 100%;">
+                        <img src="/static/logos/noun-refresh-7734826.png" height="60%" style="top:20%;position: relative;">
+                    </div>
+                </button>
             </div>
             <div id="helper"></div>
             <span id="clock" style="display: grid-row;position: relative;font-size: 30px;color: white;font-family: SpaceMono;justify-self: right;align-self: center;right:15px;width:max(15%,fit-content);text-align: right;margin-left: 20px;"></span>
@@ -360,9 +366,9 @@
                     "GPS Altitude",
                     "GPS Velocity",
                     "GPS Satellites",
-                    "GPS Heaiding",
-                    "Battery Voltage",
+                    "GPS Heading",
                     "Flight State",
+                    "Battery Voltage",
                     "SD Log State",
                     "Flash Log State"
                 ]
@@ -408,6 +414,10 @@
 
                 document.querySelectorAll(".add_button").forEach((x) => {
                     x.addEventListener('click', addMeter);
+                });
+
+                document.querySelectorAll(".reset_button").forEach((x) => {
+                    x.addEventListener('click', reset_values);
                 });
 
                 var reload = false;
@@ -818,7 +828,7 @@
             function animateButton(elem){
                 elem.classList.toggle("showing");
                 document.getElementById("plus").classList.toggle("cross");
-                document.querySelectorAll(".add_button").forEach((x)=>{
+                document.querySelectorAll(".add_plus").forEach((x)=>{
                     if(x.classList.contains("show_button") || x.classList.contains("hide_button")){
                         x.classList.toggle("hide_button");
                         if(x.classList.contains("hide_button")){
@@ -1711,12 +1721,14 @@
 
                 },
                 function (error){
-                    map = L.map("map", { center: [51.450584 , -2.5946832], zoom: 12, zoomControl: false });
+                    map = L.map("map", { center: [55.9466286 , -3.1807137], zoom: 12, zoomControl: false });
                     var tile_layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 19,
                         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                     });
                     tile_layer.addTo(map);
+                    markerRocket = L.marker([mapData.get("GPS Latitude"), mapData.get("GPS Longitude")],{icon: rocketPointer}).addTo(map);
+                    markerRocket.bindPopup("<b>Rocket Location:</b><br>Lat: " + mapData.get("GPS Latitude") +", Lng: " + mapData.get("GPS Longitude"));
                     // tile_layer.on("load",function() { 
                     //     if(document.getElementById('loadingRocket')!=null){
                     //     document.getElementById('loadingRocket').style.animation += ', fade 0.5s forwards ease-out';
@@ -1787,7 +1799,8 @@
                     newDiv.style.width = "100%";
                     newDiv.style.display = 'flex';
                     newDiv.style.flexDirection = 'row';
-                    newDiv.style.alignItems = 'stretch';
+                    newDiv.style.alignItems = 'center';
+                    newDiv.style.alignContent = 'center';
                     newDiv.style.justifyContent = 'space-between';
                     for(var j = 3*i; j < Math.min(values.length, 3*(i+1)); j++){
                         var smallDiv = document.createElement('div');
@@ -1798,7 +1811,12 @@
                         else{
                             val = "-" + Math.abs(mapData.get(values[j])).toString().padStart(6,"0");
                         }
-                        smallDiv.innerHTML = `<span style="font-size:12px;white-space:nowrap;overflow:hidden;width:50%;">`+values[j]+`</span><br>` + mapData.get(values[j]).toString().padStart(3,"0");
+                        if(values[j] === "Flight State"){
+                            smallDiv.innerHTML = `<span style="font-size:12px;white-space:nowrap;overflow:hidden;width:50%;">`+values[j]+`</span><br>` + mapData.get(values[j]).toString();
+                        }
+                        else{
+                            smallDiv.innerHTML = `<span style="font-size:12px;white-space:nowrap;overflow:hidden;width:50%;">`+values[j]+`</span><br>` + mapData.get(values[j]).toString().padStart(3,"0");
+                        }
                         smallDiv.style.width = '30%';
                         smallDiv.style.overflow = 'hidden';
                         smallDiv.style.padding = '2px';
@@ -2231,6 +2249,7 @@
                 ctx.resetTransform();
             }
 
+
             var markerRocket = null;
 
             if (!!window.EventSource) {
@@ -2255,12 +2274,22 @@
                     // console.log(e);
                     var data = e.data;
                     var nextBreak;
-                    
-                    while((nextBreak = data.indexOf(',')) !== -1){
-                        let dataToAdd = Number(data.substring(0,nextBreak));
-                        mapData.set(packetVals[count], dataToAdd);
-                        if(mapMax.get(packetVals[count]) === undefined|| dataToAdd > mapMax.get(packetVals[count])){
-                            mapMax.set(packetVals[count], dataToAdd);
+                    while(true){
+                        nextBreak = data.indexOf(",");
+                        if(nextBreak === -1){
+                            let dataToAdd = Number(data);
+                            mapData.set(packetVals[count], dataToAdd);
+                            if(mapMax.get(packetVals[count]) === undefined|| dataToAdd > mapMax.get(packetVals[count])){
+                                mapMax.set(packetVals[count], dataToAdd);
+                            }
+                            break;
+                        }
+                        else{
+                            let dataToAdd = Number(data.substring(0, nextBreak));
+                            mapData.set(packetVals[count], dataToAdd);
+                            if(mapMax.get(packetVals[count]) === undefined|| dataToAdd > mapMax.get(packetVals[count])){
+                                mapMax.set(packetVals[count], dataToAdd);
+                            }
                         }
                         data = data.substring(nextBreak+1);
                         count++;
@@ -2269,7 +2298,6 @@
                         StoredData.shift();
                     }
                     StoredData.push(mapData);
-
                     setupMsg();
                     meterUpdate();
                     graphUpdate();
@@ -2280,6 +2308,16 @@
                 };
                 
             }
+            
+            function reset_values(){
+                mapData = new Map();
+                mapMax = new Map();
+                StoredData = [];
+                for(var i = 0; i < lens.length; i++){
+                    lens[i] = 0;
+                }
+            }
+
             var map;
             var bluemarker = L.icon({
                 iconUrl: '/static/logos/pin.png',
@@ -2328,12 +2366,14 @@
                 markerRocket.bindPopup("<b>Rocket Location:</b><br>Lat: " + position.coords.latitude +", Lng: " + position.coords.longitude);
             },
             function (error){
-                map = L.map("map", { center: [51.450584 , -2.5946832], zoom: 12, zoomControl: false });
+                map = L.map("map", { center: [55.9466286 , -3.1807137], zoom: 12, zoomControl: false });
                 var tile_layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
                     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 });
                 tile_layer.addTo(map);
+                var marker = L.marker([55.9466286 , -3.1807137],{icon: bluemarker}).addTo(map);
+                // markerRocket = L.marker([position.coords.latitude,position.coords.longitude],{icon: rocketPointer}).addTo(map);
                 tile_layer.on("load",function() { 
                     if(document.getElementById('loadingRocket')!=null){
                     document.getElementById('loadingRocket').style.animation += ', fade 0.5s forwards ease-out';

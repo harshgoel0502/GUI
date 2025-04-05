@@ -132,8 +132,13 @@ def handle_terminal_commands(radio):
             try:
                 command = pickle.load(f)
                 # threading.Thread(target=radio.send_packet, args=(str(command),), daemon=True).start()
-                radio.send_packet(str(command))
-                print(f"Sent command: {command}")
+                if command == "DISARM":
+                    # radio.console.log(radio.armed)
+                    radio.send_packet(str(command))
+                #     print(f"Sent command: {command}")
+                # if command == "ARM":
+                #     main()
+                #     return
                 # return
             except EOFError:
                 continue
@@ -174,6 +179,8 @@ def main():
         cons.rule("[bold blue]Setting up Connection.")
         radio.setup()
         setup = 'n'
+    else:
+        radio.launch_GUI()
 
     command_thread = threading.Thread(target=handle_terminal_commands, args=(radio,), daemon=True)
     command_thread.start()
