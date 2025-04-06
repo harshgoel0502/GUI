@@ -60,21 +60,21 @@
         </div> -->
         <div id="app">
             <div id="block0" class="resizable-x">
-                <div id="block1" class="resizable-y" style="flex: 33.33%;position:relative;">
-                    <div id="block2" class="resizable" style="flex: 33.33%;position:relative;">
+                <div id="block1" class="resizable-y" style="flex: 40%;position:relative;">
+                    <div id="block2" class="resizable" style="flex: 40%;position:relative;">
                         <div id="data1" class="data">
                             <div style="display: flex;flex-direction: row;justify-content: space-between;">
                             </div>
                         </div>
                     </div>
                     <div id="y0" class="resizer-y"></div>
-                    <div id="block3" class="resizable-y" style="flex: 66.66%;position:relative;">
-                        <div id="block4" class="resizable" style="flex: 33.33%;position:relative;">
+                    <div id="block3" class="resizable-y" style="flex: 60%;position:relative;">
+                        <div id="block4" class="resizable" style="flex: 30%;position:relative;">
                             <canvas id="meter1" class="meter" style="width: 100%; height: 100%;">
                             </canvas>
                         </div>
                         <div id="y1" class="resizer-y"></div>
-                        <div id="block5" class="resizable" style="flex: 33.33%;position:relative;">
+                        <div id="block5" class="resizable" style="flex: 30%;position:relative;">
                             <canvas id="graph1" class="graph" style="width: 100%;">
                             </canvas>
                         </div>
@@ -364,8 +364,8 @@
                     "GPS Latitude",
                     "GPS Longitude",
                     "GPS Altitude",
-                    "GPS Velocity",
                     "GPS Satellites",
+                    "GPS Velocity",
                     "GPS Heading",
                     "Flight State",
                     "Battery Voltage",
@@ -1721,7 +1721,7 @@
 
                 },
                 function (error){
-                    map = L.map("map", { center: [55.9466286 , -3.1807137], zoom: 12, zoomControl: false });
+                    map = L.map("map", { center: [55.726674 , -4.811081], zoom: 12, zoomControl: false });
                     var tile_layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                         maxZoom: 19,
                         attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -1766,18 +1766,21 @@
 
             const defaultColours = [[255,255,255],[127.5,0,0],[0,127.5,0],[0,0,127.5]];
             var setupMsg = function() {
-                onMsg("GyroX","data1",
-                    "GyroY",
-                    "GyroZ",
-                    "AccX",
-                    "AccY",
+                onMsg("Packet Number","data1",
+                    "Time Since Arming",
+                    "Flight State",
+                    "Barometer Velocity",
+                    "Barometer Altitude",
+                    "Barometer Temperature",
+                    "Barometer Pressure",
+                    "IMU Temperature",
                     "AccZ");
-                onMsg("GyroX","data2",
-                    "GyroY",
-                    "GyroZ",
-                    "AccX",
-                    "AccY",
-                    "AccZ");
+                onMsg("GPS Latitude","data2",
+                    "GPS Longitude",
+                    "GPS Altitude",
+                    "GPS Velocity",
+                    "GPS Satellites",
+                    "GPS Heading");
             }
             var onMsg = function(name, elem, ...more) {
                 if(elem.toString().includes("#")){
@@ -1815,7 +1818,7 @@
                             smallDiv.innerHTML = `<span style="font-size:12px;white-space:nowrap;overflow:hidden;width:50%;">`+values[j]+`</span><br>` + mapData.get(values[j]).toString();
                         }
                         else{
-                            smallDiv.innerHTML = `<span style="font-size:12px;white-space:nowrap;overflow:hidden;width:50%;">`+values[j]+`</span><br>` + mapData.get(values[j]).toString().padStart(3,"0");
+                            smallDiv.innerHTML = `<span style="font-size:12px;white-space:nowrap;overflow:hidden;width:50%;">`+values[j]+`</span><br>` + mapData.get(values[j]).toFixed(6).toString().padStart(3,"0");
                         }
                         smallDiv.style.width = '30%';
                         smallDiv.style.overflow = 'hidden';
@@ -1853,8 +1856,8 @@
             }
 
             var meterUpdate = function() {
-                animateMeter("Barometer Pressure", "meter1");
-                animateMeter("Barometer Pressure", "meter2");
+                animateMeter("GPS Altitude", "meter1");
+                animateMeter("Barometer Altitude", "meter2");
             }
 
             function animateMeter(Name, elem, maxVal = null){
@@ -1972,8 +1975,8 @@
             //     ["AccZ","AccX","AccY"]
             // ];
             var graphUpdate = function() {
-                animateGraph("IMU Temperature", "graph1", lens[0]++,"Barometer Pressure");
-                animateNegativeGraph("AccZ", "graph2", lens[1]++,"AccX","AccY");
+                animateNegativeGraph("AccX", "graph1", lens[0]++,"AccY", "AccZ");
+                animateNegativeGraph("GyroX", "graph2", lens[1]++,"GyroY","GyroZ");
             }
             function animateGraph(name, elem, len, ...more){
                 // thisNum = parseInt(thisNum);
@@ -2276,20 +2279,36 @@
                     var nextBreak;
                     while(true){
                         nextBreak = data.indexOf(",");
+                        let dataToAdd;
                         if(nextBreak === -1){
-                            let dataToAdd = Number(data);
-                            mapData.set(packetVals[count], dataToAdd);
-                            if(mapMax.get(packetVals[count]) === undefined|| dataToAdd > mapMax.get(packetVals[count])){
-                                mapMax.set(packetVals[count], dataToAdd);
-                            }
-                            break;
+                            dataToAdd = Number(data);
                         }
                         else{
-                            let dataToAdd = Number(data.substring(0, nextBreak));
-                            mapData.set(packetVals[count], dataToAdd);
-                            if(mapMax.get(packetVals[count]) === undefined|| dataToAdd > mapMax.get(packetVals[count])){
-                                mapMax.set(packetVals[count], dataToAdd);
-                            }
+                            dataToAdd = Number(data.substring(0, nextBreak));
+                        }
+                        var dataType = packetVals[count];
+                        if (((dataType === "GPS Latitude") && (Math.abs(dataToAdd) > 90))
+                            || ((dataType === "GPS Longitude") && (Math.abs(dataToAdd) > 180))){
+                            dataToAdd = dataToAdd/(Math.pow(10,7));
+                        }
+                        else if(dataType === "GPS Altitude"){
+                            dataToAdd = dataToAdd/(Math.pow(10,3));
+                        }
+                        // else if(dataType === "Barometer Altitude"){
+                        //     dataToAdd = dataToAdd/(Math.pow(10,3));
+                        // }
+                        else if(dataType === "GPS Velocity"){
+                            dataToAdd = dataToAdd/(Math.pow(10,3));
+                        }
+                            // console.log(data);
+                            // console.log(data.substring(0, nextBreak));
+                            // console.log(Number(data.substring(0, nextBreak)));
+                        mapData.set(dataType, dataToAdd);
+                        if(mapMax.get(dataType) === undefined || dataToAdd > mapMax.get(dataType)){
+                            mapMax.set(dataType, dataToAdd);
+                        }
+                        if(nextBreak === -1){
+                            break;
                         }
                         data = data.substring(nextBreak+1);
                         count++;
@@ -2302,7 +2321,13 @@
                     meterUpdate();
                     graphUpdate();
                     if(markerRocket !== null){
-                        markerRocket.setLatLng([mapData.get("GPS Latitude"),mapData.get("GPS Longitude")]).update();
+                        try{
+                            markerRocket.setLatLng([mapData.get("GPS Latitude"),mapData.get("GPS Longitude")]).update();
+                        }
+                        catch(error){
+                            markerRocket.setLatLng([55.726674 , -4.811081]).update();
+                            // console.log("Error: " + error);
+                        }
                         markerRocket.bindPopup("<b>Rocket Location:</b><br>Lat: " + mapData.get("GPS Latitude") +", Lng: " + mapData.get("GPS Longitude"));
                     }
                 };
@@ -2316,6 +2341,7 @@
                 for(var i = 0; i < lens.length; i++){
                     lens[i] = 0;
                 }
+                reloadMap()
             }
 
             var map;
@@ -2366,15 +2392,23 @@
                 markerRocket.bindPopup("<b>Rocket Location:</b><br>Lat: " + position.coords.latitude +", Lng: " + position.coords.longitude);
             },
             function (error){
-                map = L.map("map", { center: [55.9466286 , -3.1807137], zoom: 12, zoomControl: false });
+                map = L.map("map", { center: [55.726674 , -4.811081], zoom: 12, zoomControl: false });
                 var tile_layer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
                     maxZoom: 19,
                     attribution: '&copy; <a href="http://www.openstreetmap.org/copyright">OpenStreetMap</a>'
                 });
                 tile_layer.addTo(map);
-                var marker = L.marker([55.9466286 , -3.1807137],{icon: bluemarker}).addTo(map);
+                var marker = L.marker([55.726674 , -4.811081],{icon: bluemarker}).addTo(map);
                 // markerRocket = L.marker([position.coords.latitude,position.coords.longitude],{icon: rocketPointer}).addTo(map);
-                tile_layer.on("load",function() { 
+                try{
+                    markerRocket = L.marker([mapData.get("GPS Latitude"), mapData.get("GPS Longitude")],{icon: rocketPointer}).addTo(map);
+                }
+                catch(error){
+                    markerRocket = L.marker([55.726674 , -4.811081],{icon: rocketPointer}).addTo(map);
+                    // console.log("Error: " + error);
+                }
+                //     markerRocket.bindPopup("<b>Rocket Location:</b><br>Lat: " + mapData.get("GPS Latitude") +", Lng: " + mapData.get("GPS Longitude"));
+                    tile_layer.on("load",function() { 
                     if(document.getElementById('loadingRocket')!=null){
                     document.getElementById('loadingRocket').style.animation += ', fade 0.5s forwards ease-out';
                     setTimeout(() => {

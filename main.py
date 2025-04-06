@@ -29,6 +29,7 @@ from rich.text import Text
 from rich.markdown import Markdown
 from collections import deque
 
+import csv
 from flask import Flask, redirect, request, Response, url_for, render_template
 from queue import Queue
 
@@ -114,6 +115,9 @@ def test():
                 data = radio.listen_packets_GUI()
                 if data is not None:
                     yield f"data: {data}\n\n"
+                    with open('./log.csv','w') as csvfile:
+                        writer = csv.writer(csvfile)
+                        writer.writerow(str(data))
         return Response(events(), content_type='text/event-stream')
     return render_template('index.html')
 

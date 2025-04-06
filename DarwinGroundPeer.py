@@ -200,10 +200,15 @@ class DarwinGroundPeer:
             value = int.from_bytes(payload[i:i+4], byteorder='little', signed=True)
             values.append(str(value))
             i = 12
-            while i < len(payload):
-                if i + 4 <= len(payload):
+            paylen = len(payload)
+            while i < paylen:
+                if i + 4 <= paylen:
                     value = struct.unpack('f', payload[i:i+4])[0]
                     values.append(str("{:.2f}".format(value)))
+                else:
+                    value = struct.unpack('f', payload[i:paylen])[0]
+                    values.append(str("{:.2f}".format(value)))
+                    break
                 i += 4
             
             decoded = ",".join(values)
@@ -312,10 +317,15 @@ class DarwinGroundPeer:
                     value = int.from_bytes(payload[i:i+4], byteorder='little', signed=True)
                     values.append(str(value))
                     i = 12
-                    while i < len(payload):
-                        if i + 4 <= len(payload):
+                    paylen = len(payload)
+                    while i < paylen:
+                        if i + 4 <= paylen:
                             value = struct.unpack('f', payload[i:i+4])[0]
                             values.append(str("{:.2f}".format(value)))
+                        else:
+                            value = struct.unpack('f', payload[i:paylen])[0]
+                            values.append(str("{:.2f}".format(value)))
+                            break
                         i += 4
                     
                     decoded = ",".join(values)
